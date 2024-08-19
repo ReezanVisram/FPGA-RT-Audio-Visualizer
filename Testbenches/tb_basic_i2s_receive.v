@@ -2,7 +2,7 @@
 module tb_basic_i2s_receive;
   parameter DATA_WIDTH = 32;
   parameter CLK_PERIOD=20;
-
+  
   reg clk = 1'b1;
   
   reg sck = 1'b0;
@@ -21,7 +21,7 @@ module tb_basic_i2s_receive;
 
   event check_output;
 
-  integer num_tests = 100;
+  integer num_tests = 200;
   integer num_fails = 0;
 
   initial
