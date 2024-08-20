@@ -9,14 +9,21 @@ module tb_basic_i2s_transmit;
   reg [DATA_WIDTH - 1:0] data_left = {DATA_WIDTH{1'b0}};
   reg [DATA_WIDTH - 1:0] data_right = {DATA_WIDTH{1'b0}};
 
-  reg [DATA_WIDTH - 1:0] random_data = {DATA_WIDTH{1'b0}};
+  reg [DATA_WIDTH - 1:0] random_sample = {DATA_WIDTH{1'b0}};
 
   reg [DATA_WIDTH - 1:0] data_received = {DATA_WIDTH{1'b0}};
+
+  reg [DATA_WIDTH - 1:0] sampled_data_left;
+  reg [DATA_WIDTH - 1:0] sampled_data_right;
+  reg [DATA_WIDTH - 1:0] sampled_received;
+  
   wire sd;
 
   basic_i2s_transmit u1(.clk(clk), .sck(sck), .ws(ws), .data_left(data_left), .data_right(data_right), .sd(sd));
 
   integer i;
+  integer length = 3;
+  integer old_length;
 
   integer num_tests = 100;
   integer num_fails = 0;
@@ -25,47 +32,56 @@ module tb_basic_i2s_transmit;
 
   initial
   begin
+    $timeformat(-9, 2, " ns", 20);
     @(ws);
     repeat(2) @(negedge sck);
-    repeat(num_tests)
+    while (length <= DATA_WIDTH)
     begin
-      for (i = 0; i < DATA_WIDTH; i = i + 1)
+      repeat(num_tests)
       begin
-        data_received[DATA_WIDTH - 1 - i] = sd;
-        @(negedge sck);
+        for (i = 0; i < DATA_WIDTH; i = i + 1)
+        begin
+          data_received[DATA_WIDTH - 1 - i] <= sd;
+          @(negedge sck);
+        end
+        ->check_output;
       end
+      old_length = length;
+      length = length + 1;
     end
 
-    ->check_output;
 
-    $display("%0d/%0d tests passed!", num_tests - num_fails, num_tests);
+    $display("%0d/%0d tests passed!", (num_tests * 30) - num_fails, num_tests * 30);
     #(((CLK_PERIOD/2) * 8) * 6) $finish;
   end
 
   always @(ws)
   begin
-      random_data = $random;
+      random_sample = $random;
       if (ws)
-        data_right = random_data;
+        data_right = random_sample & (32'hFFFFFFFF << (DATA_WIDTH - length));
       else
-        data_left = random_data;
+        data_left = random_sample & (32'hFFFFFFFF << (DATA_WIDTH - length));
   end
 
   always @(check_output)
   begin
+      sampled_data_left = data_left & (32'hFFFFFFFF << (32 - old_length));
+      sampled_data_right = data_right & (32'hFFFFFFFF << (32 - old_length));
+      sampled_received = data_received & (32'hFFFFFFFF << (32 - old_length));
     if (ws)
     begin
-      if (data_left != data_received)
+      if (sampled_data_left != sampled_received)
       begin
-        $display("Test Failed: Expected = %0h, Received = %0h", data_left, data_received);
+        $display("Test Failed: Time = %0t, Expected = %0h, Received = %0h", $time, sampled_data_left, sampled_received);
         num_fails = num_fails + 1;
       end
     end
     else
     begin
-      if (data_right != data_received)
+      if (sampled_data_right != sampled_received)
       begin
-        $display("Test Failed: Expected = %0h, Received = %0h", data_right, data_received);
+        $display("Test Failed: Time = %0t, Expected = %0h, Received = %0h", $time, sampled_data_right, sampled_received);
         num_fails = num_fails + 1;
       end
     end
