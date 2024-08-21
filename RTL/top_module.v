@@ -37,23 +37,23 @@ module top_module(
     .ws(ws)
   );
 
-  // basic_i2s_receive rx(
-  //   .clk(clk),
-  //   .ws(ws),
-  //   .sck(sck),
-  //   .sd(line_in_sdout),
-  //   .data_left(data_left),
-  //   .data_right(data_right)
-  // );
+  basic_i2s_receive rx(
+    .clk(clk_22_579MHz),
+    .ws(ws),
+    .sck(sck),
+    .sd(line_in_sdout),
+    .data_left(data_left),
+    .data_right(data_right)
+  );
 
-  // basic_i2s_transmit tx(
-  //   .clk(clk),
-  //   .ws(ws),
-  //   .sck(sck),
-  //   .data_left(data_left),
-  //   .data_right(data_right),
-  //   .sd(line_out_sdin)
-  // );
+  basic_i2s_transmit tx(
+    .clk(clk_22_579MHz),
+    .ws(ws),
+    .sck(sck),
+    .data_left(data_left),
+    .data_right(data_right),
+    .sd(line_out_sdin)
+  );
 
   assign line_out_mclk = mclk;
   assign line_out_ws = ws;
@@ -61,6 +61,6 @@ module top_module(
   assign line_in_mclk = mclk;
   assign line_in_ws = ws;
   assign line_in_sck = sck;
-  assign line_out_sdin = line_in_sdout;
+  // assign line_out_sdin = line_in_sdout;
 
 endmodule

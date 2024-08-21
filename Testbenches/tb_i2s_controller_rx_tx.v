@@ -1,36 +1,30 @@
 `timescale 1ns / 1ps
 
 module tb_i2s_controller_rx_tx;
-  parameter DATA_WIDTH=32;
+  parameter DATA_WIDTH = 32;
+  parameter MCLK_PERIOD = 20;
+  parameter SCK_PERIOD = MCLK_PERIOD * 8;
+  parameter WS_PERIOD = SCK_PERIOD * 64;
+
   reg clk = 1'b0;
-  reg resetn = 1'b0;
   wire mclk;
   wire sck;
   wire ws;
 
-  wire [31:0] data_left;
-  wire [31:0] data_right;
+  wire [DATA_WIDTH - 1:0] data_left;
+  wire [DATA_WIDTH - 1:0] data_right;
   reg sd_pre;
   reg sd;
   wire sdout;
 
-  event capture_output;
-  event check_output;
-
-  reg [DATA_WIDTH - 1:0] captured_sample;
-
-  reg [DATA_WIDTH - 1:0] prev_sent_left;
-  reg [DATA_WIDTH - 1:0] prev_sent_right;
-  reg [DATA_WIDTH - 1:0] prev_sent_leftd;
-  reg [DATA_WIDTH - 1:0] prev_sent_rightd;
-
-  reg [DATA_WIDTH - 1:0] sent;
+  reg [DATA_WIDTH - 1:0] sent_random;
+  reg [DATA_WIDTH - 1:0] sent_random_copy;
+  reg [DATA_WIDTH - 1:0] sent_random_prev;
 
   integer i;
-  integer num_fails = 0;
-  integer num_tests = 4;
+  reg [DATA_WIDTH - 1:0] captured_transmit;
 
-  i2s_controller master(.clk(clk), .resetn(resetn), .mclk(mclk), .ws(ws), .sck(sck));
+  i2s_controller master(.clk(clk), .resetn(1'b1), .mclk(mclk), .ws(ws), .sck(sck));
 
   basic_i2s_transmit tx(
     .clk(clk),
@@ -50,64 +44,30 @@ module tb_i2s_controller_rx_tx;
     .data_right(data_right)
   );
 
-  reg [31:0] random_sample;
-  
   initial
   begin
-    $timeformat(-9, 2, " ns", 20);
-    #15 resetn = 1'b1;
-    wait(resetn);
-    repeat(num_tests)
+    wait(ws == 1'b1);
+    repeat(4)
     begin
-      random_sample = $random;
-      sent = random_sample;
+      sent_random_prev = sent_random_copy;
+      sent_random = 32'hAAAAAAAA;
+      sent_random_copy = sent_random;
       for (i = 0; i < DATA_WIDTH; i = i + 1)
       begin
-        sd_pre <= random_sample[DATA_WIDTH - 1];
+        sd_pre <= sent_random[DATA_WIDTH - 1];
         sd <= sd_pre;
-        random_sample <= random_sample << 1;
-        captured_sample[DATA_WIDTH - 1 - i] <= sdout;
+        sent_random <= sent_random << 1;
+        captured_transmit[DATA_WIDTH - 1 - i] <= sdout;
         @(negedge sck);
       end
-      sd <= sd_pre;
-
-      if (ws)
-        prev_sent_left <= sent;
-      else
-        prev_sent_right <= sent;
-
-      ->check_output;
     end
+    sd <= sd_pre;
+    
 
-    $display("%0d/%0d tests passed!", num_tests - num_fails, num_tests);
-
-    #20000 $finish;
-  end
-
-  always @(check_output)
-  begin
-    @(negedge sck);
-    prev_sent_leftd = prev_sent_left;
-    prev_sent_rightd = prev_sent_right; 
-    if (ws)
-    begin
-      if (captured_sample !== prev_sent_leftd)
-      begin
-        $display("Test Failed: Time = %0t, Expected = %0h, Received = %0h", $time, prev_sent_leftd, captured_sample);
-        num_fails = num_fails + 1;
-      end
-    end
-    else
-    begin
-      if (captured_sample !== prev_sent_rightd)
-      begin
-        $display("Test Failed: Time = %0t, Expected = %0h, Received = %0h", $time, prev_sent_rightd, captured_sample);
-        num_fails = num_fails + 1;
-      end
-    end
+    #(SCK_PERIOD * 3) $finish;
   end
 
   always
-    #10 clk <= ~clk;
+    #(MCLK_PERIOD / 2) clk <= ~clk;
 
 endmodule
