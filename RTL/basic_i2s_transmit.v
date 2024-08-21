@@ -10,10 +10,10 @@ module basic_i2s_transmit
   output reg sd
 );
 
-  reg sckd;
-  reg sckdd;
-  wire sck_rise;
-  wire sck_fall;
+  reg [2:0] mclk_counter = 3'b0;
+
+  reg sck_rise;
+  reg sck_fall;
 
   reg wsd;
   reg wsdd;
@@ -24,8 +24,16 @@ module basic_i2s_transmit
 
   always @(posedge clk)
   begin
-    sckd <= sck;
-    sckdd <= sckd;
+    mclk_counter <= mclk_counter + 1;
+    if (mclk_counter == 3'b100)
+      sck_rise <= 1'b1;
+    else
+      sck_rise <= 1'b0;
+    
+    if (mclk_counter == 3'b000)
+      sck_fall <= 1'b1;
+    else
+      sck_fall <= 1'b0;
   end
 
   always @(posedge clk)
@@ -50,8 +58,7 @@ module basic_i2s_transmit
   always @(negedge sck)
     sd <= data[DATA_WIDTH - 1];
 
-  assign sck_rise = sckd & ~sckdd;
-  assign sck_fall = ~sckd & sckdd;
+
   assign wsp = wsd ^ wsdd;
 
 endmodule
