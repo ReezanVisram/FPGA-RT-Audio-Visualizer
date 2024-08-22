@@ -18,10 +18,12 @@ module top_module(
   wire sck;
   wire ws;
 
-  wire [31:0] data_left;
-  wire [31:0] data_right;
-
   wire resetn = (reset == 0) ? 1'b0 : 1'b1;
+
+  wire tready;
+  wire tvalid;
+  wire [31:0] tdata;
+  wire tlast;
 
   clk_wiz_0 inst
   (
@@ -37,21 +39,47 @@ module top_module(
     .ws(ws)
   );
 
-  basic_i2s_receive rx(
-    .clk(clk_22_579MHz),
-    .ws(ws),
+  // basic_i2s_receive rx(
+  //   .clk(clk_22_579MHz),
+  //   .ws(ws),
+  //   .sck(sck),
+  //   .sd(line_in_sdout),
+  //   .data_left(data_left),
+  //   .data_right(data_right)
+  // );
+
+  // basic_i2s_transmit tx(
+  //   .clk(clk_22_579MHz),
+  //   .ws(ws),
+  //   .sck(sck),
+  //   .data_left(data_left),
+  //   .data_right(data_right),
+  //   .sd(line_out_sdin)
+  // );
+
+  i2s_receive rx(
+    .M_AXIS_ACLK(clk_22_579MHz),
+    .M_AXIS_ARESETN(resetn),
+    .M_AXIS_TREADY(tready),
+    .M_AXIS_TVALID(tvalid),
+    .M_AXIS_TDATA(tdata),
+    .M_AXIS_TLAST(tlast),
+
     .sck(sck),
-    .sd(line_in_sdout),
-    .data_left(data_left),
-    .data_right(data_right)
+    .ws(ws),
+    .sd(line_in_sdout)
   );
 
-  basic_i2s_transmit tx(
-    .clk(clk_22_579MHz),
-    .ws(ws),
+  i2s_transmit tx(
+    .S_AXIS_ACLK(clk_22_579MHz),
+    .S_AXIS_ARESETN(resetn),
+    .S_AXIS_TREADY(tready),
+    .S_AXIS_TVALID(tvalid),
+    .S_AXIS_TDATA(tdata),
+    .S_AXIS_TLAST(tlast),
+
     .sck(sck),
-    .data_left(data_left),
-    .data_right(data_right),
+    .ws(ws),
     .sd(line_out_sdin)
   );
 

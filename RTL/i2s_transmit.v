@@ -20,17 +20,27 @@ module i2s_transmit
   wire wsp;
   reg wsd;
   reg wsdd;
-  wire sck_rise;
-  wire sck_fall;
 
   reg [DATA_WIDTH - 1:0] data;
   reg [DATA_WIDTH - 1:0] data_left;
   reg [DATA_WIDTH - 1:0] data_right;
 
-  reg [1:0] sck_sync;
+  reg [2:0] mclk_counter = 3'b0;
+  reg sck_rise;
+  reg sck_fall;
+
   always @(posedge S_AXIS_ACLK)
   begin
-    sck_sync <= {sck_sync, sck};
+    mclk_counter <= mclk_counter + 1;
+    if (mclk_counter == 3'b100)
+      sck_rise <= 1'b1;
+    else
+      sck_rise <= 1'b0;
+    
+    if (mclk_counter == 3'b000)
+      sck_fall <= 1'b1;
+    else
+      sck_fall <= 1'b0;
   end
 
   always @(posedge S_AXIS_ACLK)
@@ -74,6 +84,4 @@ module i2s_transmit
   end
 
   assign wsp = wsd ^ wsdd;
-  assign sck_rise = sck_sync == 2'b01;
-  assign sck_fall = sck_sync == 2'b10;
 endmodule

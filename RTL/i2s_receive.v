@@ -20,18 +20,27 @@ module i2s_receive
   wire wsp;
 
   reg [$clog2(DATA_WIDTH + 1) - 1:0] counter = 6'b0;
+  reg [2:0] mclk_counter = 1'b0;
 
   integer i;
 
   reg [DATA_WIDTH - 1:0] data = {DATA_WIDTH{1'b0}};
 
-  wire sck_rise;
-  wire sck_fall;
+  reg sck_rise;
+  reg sck_fall;
 
-  reg [1:0] sck_sync;
   always @(posedge M_AXIS_ACLK)
   begin
-    sck_sync <= {sck_sync, sck};
+    mclk_counter <= mclk_counter + 1;
+    if (mclk_counter == 3'b100)
+      sck_rise <= 1'b1;
+    else
+      sck_rise <= 1'b0;
+    
+    if (mclk_counter == 3'b000)
+      sck_fall <= 1'b1;
+    else
+      sck_fall <= 1'b0;
   end
 
   always @(posedge M_AXIS_ACLK)
@@ -101,6 +110,4 @@ module i2s_receive
 
 
   assign wsp = wsd ^ wsdd;
-  assign sck_rise = sck_sync == 2'b01;
-  assign sck_fall = sck_sync == 2'b10;
 endmodule
