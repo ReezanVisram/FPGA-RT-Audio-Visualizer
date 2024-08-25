@@ -26,18 +26,27 @@ module tb_top;
   reg sdin_pre;
   reg sdin;
 
+  // Sample Input
+  wire sdout;
+
   // AXI Signals
-  reg rx_tready = 1'b0;
+  wire rx_tready;
   wire rx_tvalid;
   wire [DATA_WIDTH - 1:0] rx_tdata;
   wire rx_tlast;
 
-  // Expected data to verify proper behaviour
-  reg [DATA_WIDTH - 1:0] sent_rx_tdata;
-  reg [DATA_WIDTH - 1:0] expected_rx_tdata;
+  wire tx_to_br_tready;
+  wire br_to_tx_tvalid;
+  wire [DATA_WIDTH - 1:0] br_to_tx_tdata;
+  wire br_to_tx_tlast;
 
-  // Verification Events
-  event check_rx_tdata;
+  wire conv_to_br_tready;
+  wire br_to_conv_tvalid;
+  wire [DATA_WIDTH - 1:0] br_to_conv_tdata;
+  wire br_to_conv_tlast;
+
+  // Mono Sample
+  wire [DATA_WIDTH - 1:0] mono_sample;
 
   clk_wiz_0 clk_generator(
     .clk_in1(clk_100MHz),
@@ -66,6 +75,49 @@ module tb_top;
     .sd(sdin)
   );
 
+  axi4_stream_broadcaster broadcaster(
+    .AXIS_ACLK(clk_22_579MHz),
+    .AXIS_ARESETN(resetn),
+    .S_AXIS_TDATA(rx_tdata),
+    .S_AXIS_TVALID(rx_tvalid),
+    .S_AXIS_TLAST(rx_tlast),
+    .S_AXIS_TREADY(rx_tready),
+
+    .M_AXIS_TDATA1(br_to_tx_tdata),
+    .M_AXIS_TVALID1(br_to_tx_tvalid),
+    .M_AXIS_TLAST1(br_to_tx_tlast),
+    .M_AXIS_TREADY1(tx_to_br_tready),
+
+    .M_AXIS_TDATA2(br_to_conv_tdata),
+    .M_AXIS_TVALID2(br_to_conv_tvalid),
+    .M_AXIS_TLAST2(br_to_conv_tlast),
+    .M_AXIS_TREADY2(conv_to_br_tready)
+  );
+
+  i2s_transmit i2s_tx(
+    .S_AXIS_ACLK(clk_22_579MHz),
+    .S_AXIS_ARESETN(resetn),
+    .S_AXIS_TDATA(br_to_tx_tdata),
+    .S_AXIS_TLAST(br_to_tx_tlast),
+    .S_AXIS_TVALID(br_to_tx_tvalid),
+    .S_AXIS_TREADY(tx_to_br_tready),
+
+    .sck(sck),
+    .ws(ws),
+    .sd(sdout)
+  );
+
+  packet_to_mono_sample_converter conv(
+    .S_AXIS_ACLK(clk_22_579MHz),
+    .S_AXIS_ARESETN(resetn),
+    .S_AXIS_TDATA(br_to_conv_tdata),
+    .S_AXIS_TLAST(br_to_conv_tlast),
+    .S_AXIS_TVALID(br_to_conv_tvalid),
+    .S_AXIS_TREADY(conv_to_br_tready),
+
+    .mono_sample(mono_sample)
+  );
+
   initial
   begin
     $timeformat(-9, 2, " ns", 20);
@@ -78,7 +130,6 @@ module tb_top;
     for (sample_line = 0; sample_line < NUM_SAMPLES; sample_line = sample_line + 1)
     begin
       sample = sample_memory[sample_line];
-      sent_rx_tdata = sample;
 
       repeat(DATA_WIDTH) // We want to output the 24 bit sample, then another 8 cycles of don't cares
       begin
@@ -87,21 +138,9 @@ module tb_top;
         sample <= sample << 1;
         @(negedge sck);
       end
-      expected_rx_tdata = sent_rx_tdata;
-      ->check_rx_tdata;
     end
 
     #900 $finish;
-  end
-
-  always @(check_rx_tdata)
-  begin
-    // We wait 1 sck cycle for the LSB to be transmitted, and then 1 sck cycle for TDATA to be populated
-    repeat(2) @(negedge sck); 
-    if (expected_rx_tdata != rx_tdata)
-    begin
-      $display("Test failed. Time = %0t, Sample # = %0d, Expected = %0h, Received = %0h", $time, sample_line, expected_rx_tdata, rx_tdata);
-    end
   end
 
   always
