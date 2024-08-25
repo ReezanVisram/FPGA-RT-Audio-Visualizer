@@ -20,30 +20,30 @@ module top_module(
 
   wire resetn = (reset == 0) ? 1'b0 : 1'b1;
 
-  wire tready;
-  wire tvalid;
-  wire [31:0] tdata;
-  wire tlast;
+  wire rx_tready;
+  wire rx_tvalid;
+  wire [31:0] rx_tdata;
+  wire rx_tlast;
  
-  wire tready1;
-  wire tvalid1;
-  wire [31:0] tdata1;
-  wire tlast1;
+  wire tx_to_br_tready;
+  wire br_to_tx_tvalid;
+  wire [31:0] br_to_tx_tdata;
+  wire br_to_tx_tlast;
 
-  wire tready2;
-  wire tvalid2;
-  wire [31:0] tdata2;
-  wire tlast2;
+  wire conv_to_br_tready;
+  wire br_to_conv_tvalid;
+  wire [31:0] br_to_conv_tdata;
+  wire br_to_conv_tlast;
 
   wire [31:0] mono_sample;
   
-  clk_wiz_0 inst
+  clk_wiz_0 clk_gen
   (
     .clk_in1(clk_100MHz),         
     .clk_22_579MHz(clk_22_579MHz)
   );
 
-  i2s_controller master (
+  i2s_controller i2s_master (
     .clk(clk_22_579MHz),
     .resetn(resetn),
     .mclk(mclk),
@@ -51,13 +51,13 @@ module top_module(
     .ws(ws)
   );
 
-  i2s_receive rx1(
+  i2s_receive i2s_rx(
     .M_AXIS_ACLK(clk_22_579MHz),
     .M_AXIS_ARESETN(resetn),
-    .M_AXIS_TREADY(tready),
-    .M_AXIS_TVALID(tvalid),
-    .M_AXIS_TDATA(tdata),
-    .M_AXIS_TLAST(tlast),
+    .M_AXIS_TREADY(rx_tready),
+    .M_AXIS_TVALID(rx_tvalid),
+    .M_AXIS_TDATA(rx_tdata),
+    .M_AXIS_TLAST(rx_tlast),
 
     .sck(sck),
     .ws(ws),
@@ -67,29 +67,29 @@ module top_module(
   axi4_stream_broadcaster broadcaster(
     .AXIS_ACLK(clk_22_579MHz),
     .AXIS_ARESETN(resetn),
-    .S_AXIS_TDATA(tdata),
-    .S_AXIS_TVALID(tvalid),
-    .S_AXIS_TLAST(tlast),
-    .S_AXIS_TREADY(tready),
+    .S_AXIS_TDATA(rx_tdata),
+    .S_AXIS_TVALID(rx_Tvalid),
+    .S_AXIS_TLAST(rx_tlast),
+    .S_AXIS_TREADY(rx_tready),
 
-    .M_AXIS_TDATA1(tdata1),
-    .M_AXIS_TVALID1(tvalid1),
-    .M_AXIS_TLAST1(tlast1),
-    .M_AXIS_TREADY1(tready1),
+    .M_AXIS_TDATA1(br_to_tx_data),
+    .M_AXIS_TVALID1(br_to_tx_tvalid),
+    .M_AXIS_TLAST1(br_to_tx_tlast),
+    .M_AXIS_TREADY1(tx_to_br_tready),
 
-    .M_AXIS_TDATA2(tdata2),
-    .M_AXIS_TVALID2(tvalid2),
-    .M_AXIS_TLAST2(tlast2),
-    .M_AXIS_TREADY2(tready2)
+    .M_AXIS_TDATA2(br_to_conv_tdata),
+    .M_AXIS_TVALID2(br_to_conv_tvalid),
+    .M_AXIS_TLAST2(br_to_conv_tlast),
+    .M_AXIS_TREADY2(conv_to_br_tready)
   );
 
   i2s_transmit tx(
     .S_AXIS_ACLK(clk_22_579MHz),
     .S_AXIS_ARESETN(resetn),
-    .S_AXIS_TREADY(tready1),
-    .S_AXIS_TVALID(tvalid1),
-    .S_AXIS_TDATA(tdata1),
-    .S_AXIS_TLAST(tlast1),
+    .S_AXIS_TREADY(tx_to_br_tready),
+    .S_AXIS_TVALID(br_to_tx_tvalid),
+    .S_AXIS_TDATA(br_to_tx_tdata),
+    .S_AXIS_TLAST(br_to_tx_tlast),
 
     .sck(sck),
     .ws(ws),
@@ -99,10 +99,10 @@ module top_module(
   packet_to_mono_sample_converter conv(
     .S_AXIS_ACLK(clk_22_579MHz),
     .S_AXIS_ARESETN(resetn),
-    .S_AXIS_TREADY(tready2),
-    .S_AXIS_TVALID(tvalid2),
-    .S_AXIS_TDATA(tdata2),
-    .S_AXIS_TLAST(tlast2),
+    .S_AXIS_TREADY(conv_to_br_tready),
+    .S_AXIS_TVALID(br_to_conv_tvalid),
+    .S_AXIS_TDATA(br_to_conv_tdata),
+    .S_AXIS_TLAST(br_to_conv_tlast),
     .mono_sample(mono_sample)
   );
 
