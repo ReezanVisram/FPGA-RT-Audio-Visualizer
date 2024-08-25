@@ -54,7 +54,7 @@ module tb_top;
   );
 
   i2s_receive i2s_rx(
-    .M_AXIS_ACLK(mclk),
+    .M_AXIS_ACLK(clk_22_579MHz),
     .M_AXIS_ARESETN(resetn),
     .M_AXIS_TREADY(rx_tready),
     .M_AXIS_TVALID(rx_tvalid),
