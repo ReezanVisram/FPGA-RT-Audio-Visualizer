@@ -2,7 +2,7 @@
 -- Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2023.2 (win64) Build 4029153 Fri Oct 13 20:14:34 MDT 2023
--- Date        : Sun Aug 25 20:20:45 2024
+-- Date        : Mon Aug 26 11:51:34 2024
 -- Host        : DESKTOP-N8LM7HE running 64-bit major release  (build 9200)
 -- Command     : write_vhdl -force -mode funcsim
 --               d:/Projects/FPGA_RT_Audio_Processor/IP/clk_wiz_0/clk_wiz_0_sim_netlist.vhdl
@@ -18,7 +18,7 @@ use UNISIM.VCOMPONENTS.ALL;
 entity clk_wiz_0_clk_wiz is
   port (
     clk_22_579MHz : out STD_LOGIC;
-    clk_35_MHz : out STD_LOGIC;
+    clk_35MHz : out STD_LOGIC;
     reset : in STD_LOGIC;
     locked : out STD_LOGIC;
     clk_in1 : in STD_LOGIC
@@ -27,7 +27,7 @@ end clk_wiz_0_clk_wiz;
 
 architecture STRUCTURE of clk_wiz_0_clk_wiz is
   signal clk_22_579MHz_clk_wiz_0 : STD_LOGIC;
-  signal clk_35_MHz_clk_wiz_0 : STD_LOGIC;
+  signal clk_35MHz_clk_wiz_0 : STD_LOGIC;
   signal clk_in1_clk_wiz_0 : STD_LOGIC;
   signal clkfbout_buf_clk_wiz_0 : STD_LOGIC;
   signal clkfbout_clk_wiz_0 : STD_LOGIC;
@@ -79,8 +79,8 @@ clkout1_buf: unisim.vcomponents.BUFG
     );
 clkout2_buf: unisim.vcomponents.BUFG
      port map (
-      I => clk_35_MHz_clk_wiz_0,
-      O => clk_35_MHz
+      I => clk_35MHz_clk_wiz_0,
+      O => clk_35MHz
     );
 mmcm_adv_inst: unisim.vcomponents.MMCME2_ADV
     generic map(
@@ -144,7 +144,7 @@ mmcm_adv_inst: unisim.vcomponents.MMCME2_ADV
       CLKINSTOPPED => NLW_mmcm_adv_inst_CLKINSTOPPED_UNCONNECTED,
       CLKOUT0 => clk_22_579MHz_clk_wiz_0,
       CLKOUT0B => NLW_mmcm_adv_inst_CLKOUT0B_UNCONNECTED,
-      CLKOUT1 => clk_35_MHz_clk_wiz_0,
+      CLKOUT1 => clk_35MHz_clk_wiz_0,
       CLKOUT1B => NLW_mmcm_adv_inst_CLKOUT1B_UNCONNECTED,
       CLKOUT2 => NLW_mmcm_adv_inst_CLKOUT2_UNCONNECTED,
       CLKOUT2B => NLW_mmcm_adv_inst_CLKOUT2B_UNCONNECTED,
@@ -176,7 +176,7 @@ use UNISIM.VCOMPONENTS.ALL;
 entity clk_wiz_0 is
   port (
     clk_22_579MHz : out STD_LOGIC;
-    clk_35_MHz : out STD_LOGIC;
+    clk_35MHz : out STD_LOGIC;
     reset : in STD_LOGIC;
     locked : out STD_LOGIC;
     clk_in1 : in STD_LOGIC
@@ -190,7 +190,7 @@ begin
 inst: entity work.clk_wiz_0_clk_wiz
      port map (
       clk_22_579MHz => clk_22_579MHz,
-      clk_35_MHz => clk_35_MHz,
+      clk_35MHz => clk_35MHz,
       clk_in1 => clk_in1,
       locked => locked,
       reset => reset

@@ -2,7 +2,7 @@
 // Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
 // --------------------------------------------------------------------------------
 // Tool Version: Vivado v.2023.2 (win64) Build 4029153 Fri Oct 13 20:14:34 MDT 2023
-// Date        : Sun Aug 25 20:20:45 2024
+// Date        : Mon Aug 26 11:51:34 2024
 // Host        : DESKTOP-N8LM7HE running 64-bit major release  (build 9200)
 // Command     : write_verilog -force -mode funcsim
 //               d:/Projects/FPGA_RT_Audio_Processor/IP/clk_wiz_0/clk_wiz_0_sim_netlist.v
@@ -16,25 +16,25 @@
 (* NotValidForBitStream *)
 module clk_wiz_0
    (clk_22_579MHz,
-    clk_35_MHz,
+    clk_35MHz,
     reset,
     locked,
     clk_in1);
   output clk_22_579MHz;
-  output clk_35_MHz;
+  output clk_35MHz;
   input reset;
   output locked;
   input clk_in1;
 
   wire clk_22_579MHz;
-  wire clk_35_MHz;
+  wire clk_35MHz;
   (* IBUF_LOW_PWR *) wire clk_in1;
   wire locked;
   wire reset;
 
   clk_wiz_0_clk_wiz inst
        (.clk_22_579MHz(clk_22_579MHz),
-        .clk_35_MHz(clk_35_MHz),
+        .clk_35MHz(clk_35MHz),
         .clk_in1(clk_in1),
         .locked(locked),
         .reset(reset));
@@ -42,20 +42,20 @@ endmodule
 
 module clk_wiz_0_clk_wiz
    (clk_22_579MHz,
-    clk_35_MHz,
+    clk_35MHz,
     reset,
     locked,
     clk_in1);
   output clk_22_579MHz;
-  output clk_35_MHz;
+  output clk_35MHz;
   input reset;
   output locked;
   input clk_in1;
 
   wire clk_22_579MHz;
   wire clk_22_579MHz_clk_wiz_0;
-  wire clk_35_MHz;
-  wire clk_35_MHz_clk_wiz_0;
+  wire clk_35MHz;
+  wire clk_35MHz_clk_wiz_0;
   wire clk_in1;
   wire clk_in1_clk_wiz_0;
   wire clkfbout_buf_clk_wiz_0;
@@ -97,8 +97,8 @@ module clk_wiz_0_clk_wiz
         .O(clk_22_579MHz));
   (* BOX_TYPE = "PRIMITIVE" *) 
   BUFG clkout2_buf
-       (.I(clk_35_MHz_clk_wiz_0),
-        .O(clk_35_MHz));
+       (.I(clk_35MHz_clk_wiz_0),
+        .O(clk_35MHz));
   (* BOX_TYPE = "PRIMITIVE" *) 
   MMCME2_ADV #(
     .BANDWIDTH("OPTIMIZED"),
@@ -160,7 +160,7 @@ module clk_wiz_0_clk_wiz
         .CLKINSTOPPED(NLW_mmcm_adv_inst_CLKINSTOPPED_UNCONNECTED),
         .CLKOUT0(clk_22_579MHz_clk_wiz_0),
         .CLKOUT0B(NLW_mmcm_adv_inst_CLKOUT0B_UNCONNECTED),
-        .CLKOUT1(clk_35_MHz_clk_wiz_0),
+        .CLKOUT1(clk_35MHz_clk_wiz_0),
         .CLKOUT1B(NLW_mmcm_adv_inst_CLKOUT1B_UNCONNECTED),
         .CLKOUT2(NLW_mmcm_adv_inst_CLKOUT2_UNCONNECTED),
         .CLKOUT2B(NLW_mmcm_adv_inst_CLKOUT2B_UNCONNECTED),

@@ -4,12 +4,14 @@ module tb_top;
   localparam SYSCLK_PERIOD = 10;
   localparam NUM_SAMPLES = 2000;
   localparam DATA_WIDTH = 32;
+  localparam ADDRESS_LENGTH = 14;
 
   reg resetn = 1'b0;
 
   // Clock signals + Generation
   reg clk_100MHz = 1'b0;
   wire clk_22_579MHz;
+  wire clk_35MHz;
   wire locked;
 
   // Reading Samples
@@ -49,9 +51,26 @@ module tb_top;
   wire mono_sample_valid;
   wire [DATA_WIDTH - 1:0] mono_sample;
 
+  // FIFO Control
+  wire fifo_empty;
+  wire fifo_almost_empty;
+  wire fifo_full;
+  wire fifo_almost_full;
+
+  // Translator Control
+  wire [DATA_WIDTH - 1:0] fifo_to_translator_mono_sample;
+  wire translator_to_fifo_rd_en;
+
+  // Translator Output
+  wire [ADDRESS_LENGTH - 1:0] translator_word_address;
+  wire [4:0] translator_bit_offset;
+  wire translator_word_and_offset_valid;
+
+
   clk_wiz_0 clk_generator(
     .clk_in1(clk_100MHz),
     .clk_22_579MHz(clk_22_579MHz),
+    .clk_35MHz(clk_35MHz),
     .locked(locked)
   );
 
@@ -118,6 +137,30 @@ module tb_top;
 
     .mono_sample_valid(mono_sample_valid),
     .mono_sample(mono_sample)
+  );
+
+  fifo_generator_0 mono_sample_fifo (
+    .wr_clk(clk_22_579MHz),
+    .rd_clk(clk_35MHz),
+    .din(mono_sample),
+    .wr_en(mono_sample_valid),
+    .rd_en(translator_to_fifo_rd_en),
+    .dout(fifo_to_translator_mono_sample),
+    .full(fifo_full),
+    .almost_full(fifo_almost_full),
+    .empty(fifo_empty),
+    .almost_empty(fifo_almost_empty)
+  );
+
+  mono_sample_to_memory_addr_translator translator(
+    .clk(clk_35MHz),
+    .resetn(resetn),
+    .mono_sample(fifo_to_translator_mono_sample),
+    .fifo_almost_empty(fifo_almost_empty),
+    .fifo_rd_en(translator_to_fifo_rd_en),
+    .word_address(translator_word_address),
+    .bit_offset(translator_bit_offset),
+    .word_and_offset_valid(translator_word_and_offset_valid)
   );
 
   initial

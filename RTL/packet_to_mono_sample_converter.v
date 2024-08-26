@@ -47,7 +47,13 @@ module packet_to_mono_sample_converter
   always @(posedge S_AXIS_ACLK)
   begin    
     if (!S_AXIS_ARESETN)
+    begin
       state <= AcceptData;
+      `ifndef SYNTHESIS
+        samples[0] <= {DATA_WIDTH{1'b0}};
+        samples[1] <= {DATA_WIDTH{1'b0}};
+      `endif
+    end
     else
     begin
       case (state)

@@ -53,7 +53,7 @@
 //   Clock     Freq (MHz)  (degrees)    (%)     Jitter (ps)  Error (ps)
 //----------------------------------------------------------------------------
 // clk_22_579MHz__22.57326______0.000______50.0______522.751____622.160
-// clk_35_MHz__35.01420______0.000______50.0______489.828____622.160
+// clk_35MHz__35.01420______0.000______50.0______489.828____622.160
 //
 //----------------------------------------------------------------------------
 // Input Clock   Freq (MHz)    Input Jitter (UI)
@@ -70,7 +70,7 @@
    (
     // Clock out ports
     .clk_22_579MHz(clk_22_579MHz),     // output clk_22_579MHz
-    .clk_35_MHz(clk_35_MHz),     // output clk_35_MHz
+    .clk_35MHz(clk_35MHz),     // output clk_35MHz
     // Status and control signals
     .reset(reset), // input reset
     .locked(locked),       // output locked
