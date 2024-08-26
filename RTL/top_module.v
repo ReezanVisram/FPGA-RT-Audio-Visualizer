@@ -121,16 +121,16 @@ module top_module(
   );
 
   fifo_generator_0 fifo_gen (
-  .wr_clk(clk_22_579MHz),              // input wire wr_clk
-  .rd_clk(clk_35MHz),              // input wire rd_clk
-  .din(mono_sample),                    // input wire [31 : 0] din
-  .wr_en(mono_sample_valid),                // input wire wr_en
-  .rd_en(translator_to_fifo_rd_en),                // input wire rd_en
-  .dout(fifo_to_translator_mono_sample),                  // output wire [31 : 0] dout
-  .full(fifo_full),                  // output wire full
-  .almost_full(fifo_almost_full),    // output wire almost_full
-  .empty(fifo_empty),                // output wire empty
-  .almost_empty(fifo_almost_empty)  // output wire almost_empty
+    .wr_clk(clk_22_579MHz),
+    .rd_clk(clk_35MHz),
+    .din(mono_sample),
+    .wr_en(mono_sample_valid),
+    .rd_en(translator_to_fifo_rd_en),
+    .dout(fifo_to_translator_mono_sample),
+    .full(fifo_full),
+    .almost_full(fifo_almost_full),
+    .empty(fifo_empty),
+    .almost_empty(fifo_almost_empty)
   );
 
   mono_sample_to_memory_addr_translator translator(
