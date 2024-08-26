@@ -1,2 +1,2 @@
-*.vhdl linguist-detectable=false
-*.systemverilog linguist-detectable=false
+IP/** linguist-vendored
+Work_Dir/** linguist-vendored
