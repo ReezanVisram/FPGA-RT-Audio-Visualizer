@@ -52,7 +52,7 @@ module tb_packet_to_mono_sample_converter;
       axis_tdata <= sample; axis_tvalid <= 1'b1; axis_tlast <= sample_line % 2;
 
       wait(axis_tready == 1'b1);
-      @(posedge axis_aclk);
+      repeat(2) @(posedge axis_aclk);
       #5 axis_tvalid <= 1'b0; axis_tlast <= 1'b0;
     end
 
