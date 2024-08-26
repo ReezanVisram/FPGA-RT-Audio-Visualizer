@@ -13,6 +13,7 @@ module top_module(
 );
 
   wire clk_22_579MHz;
+  wire clk_35_MHz;
 
   wire mclk;
   wire sck;
@@ -40,7 +41,8 @@ module top_module(
   clk_wiz_0 clk_gen
   (
     .clk_in1(clk_100MHz),         
-    .clk_22_579MHz(clk_22_579MHz)
+    .clk_22_579MHz(clk_22_579MHz),
+    .clk_35_MHz(clk_35_MHz)
   );
 
   i2s_controller i2s_master (
@@ -105,6 +107,19 @@ module top_module(
     .S_AXIS_TLAST(br_to_conv_tlast),
     .mono_sample(mono_sample)
   );
+
+  fifo_generator_0 fifo_gen (
+  .wr_clk(clk_22_579MHz),              // input wire wr_clk
+  .rd_clk(clk_35_MHz),              // input wire rd_clk
+  .din(mono_sample),                    // input wire [31 : 0] din
+  .wr_en(wr_en),                // input wire wr_en
+  .rd_en(rd_en),                // input wire rd_en
+  .dout(dout),                  // output wire [31 : 0] dout
+  .full(full),                  // output wire full
+  .almost_full(almost_full),    // output wire almost_full
+  .empty(empty),                // output wire empty
+  .almost_empty(almost_empty)  // output wire almost_empty
+);
 
   assign line_out_mclk = mclk;
   assign line_out_ws = ws;

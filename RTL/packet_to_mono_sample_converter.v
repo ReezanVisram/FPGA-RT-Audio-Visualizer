@@ -10,6 +10,7 @@ module packet_to_mono_sample_converter
   input [DATA_WIDTH - 1:0] S_AXIS_TDATA,
   output reg S_AXIS_TREADY,
 
+  output reg mono_sample_valid,
   output reg [DATA_WIDTH - 1:0] mono_sample
 );
   reg sample_counter = 1'b0;
@@ -49,20 +50,34 @@ module packet_to_mono_sample_converter
 
   always @(posedge S_AXIS_ACLK)
   begin
-    S_AXIS_TREADY <= 1'b0;
+    mono_sample_valid <= 1'b0;
     case (state)
       AcceptData:
       begin
-        S_AXIS_TREADY <= 1'b1;
+        samples[sample_counter] <= S_AXIS_TDATA;
       end
       StoreData:
       begin
-        samples[sample_counter] <= S_AXIS_TDATA;
         sample_counter <= sample_counter + 1;
       end
       default: // CalculateMono
       begin
         mono_sample <= (samples[0] + samples[1]) >> 1;
+        mono_sample_valid <= 1'b1;
+      end
+    endcase
+  end
+
+  always @(*)
+  begin
+    case (state)
+      AcceptData:
+      begin
+        S_AXIS_TREADY = 1'b1;
+      end
+      default: // CalculateMono
+      begin
+        S_AXIS_TREADY = 1'b0;
       end
     endcase
   end

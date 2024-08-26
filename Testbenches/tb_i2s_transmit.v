@@ -79,7 +79,7 @@ module tb_i2s_transmit;
       tx_tdata <= sample; tx_tvalid <= 1'b1; tx_tlast = sample_line % 2 == 0;
       wait(tx_tready == 1'b1);
       @(posedge mclk);
-      tx_tvalid <= 1'b1; tx_tlast <= 1'b0;
+      tx_tvalid <= 1'b0; tx_tlast <= 1'b0;
     end
 
     #900 $finish;

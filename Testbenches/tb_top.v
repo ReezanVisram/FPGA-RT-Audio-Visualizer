@@ -46,6 +46,7 @@ module tb_top;
   wire br_to_conv_tlast;
 
   // Mono Sample
+  wire mono_sample_valid;
   wire [DATA_WIDTH - 1:0] mono_sample;
 
   clk_wiz_0 clk_generator(
@@ -115,6 +116,7 @@ module tb_top;
     .S_AXIS_TVALID(br_to_conv_tvalid),
     .S_AXIS_TREADY(conv_to_br_tready),
 
+    .mono_sample_valid(mono_sample_valid),
     .mono_sample(mono_sample)
   );
 
