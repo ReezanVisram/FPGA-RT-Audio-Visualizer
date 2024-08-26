@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-module tb_top;
+module tb_i2s_receive;
   // Parameters
   localparam SYSCLK_PERIOD = 10;
   localparam NUM_SAMPLES = 2000;
