@@ -58,6 +58,7 @@ def convert_smaples_to_memory():
                 if not wrote_memory:
                     write_memory()
                     wrote_memory = True
+                    break
                 draw_bitmap(memory, 640, 480)
                 memory = [[0 for _ in range(640)] for _ in range(480)]
                 i = 0
@@ -68,19 +69,20 @@ def convert_smaples_to_memory():
             
             row = 239 - ((239 * sample) >> 23)
 
-            if (i > 0 and i < 639):
-                bresenham(prev_i, prev_row, i, row)
+            # if (i > 0 and i < 639):
+            #     bresenham(prev_i, prev_row, i, row)
             prev_row = row
             prev_i = i
 
             memory[row][i] = 1
+            print(row * 640 + i)
             
             i += 1
 
 def write_memory():
     with open('memory.txt', 'w') as f:
         for row in memory:
-            f.write("".join(str(v) for v in row) + "\n")
+            f.write("".join(str(v) + "\n" for v in row))
 
 def draw_bitmap(bitmap, width, height, pixel_size=1):
     img_width = width
