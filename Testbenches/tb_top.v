@@ -66,6 +66,11 @@ module tb_top;
   wire [4:0] translator_bit_offset;
   wire translator_word_and_offset_valid;
 
+  // Writer Input/Output
+  wire writer_we;
+  wire [ADDRESS_LENGTH - 1:0] writer_addr;
+  wire [DATA_WIDTH - 1:0] writer_word_with_pixel_written;
+  wire [DATA_WIDTH - 1:0] msys_to_writer_data;
 
   clk_wiz_0 clk_generator(
     .clk_in1(clk_100MHz),
@@ -161,6 +166,28 @@ module tb_top;
     .word_address(translator_word_address),
     .bit_offset(translator_bit_offset),
     .word_and_offset_valid(translator_word_and_offset_valid)
+  );
+
+  memory msys1(
+    .clk(clk_35MHz),
+    .reset(~resetn),
+    .we(writer_we),
+    .rdaddr(writer_addr),
+    .wraddr(writer_addr),
+    .wrdata(writer_word_with_pixel_written),
+    .rddata(msys_to_writer_data)
+  );
+
+  addr_to_pixel_writer writer(
+    .clk(clk_35MHz),
+    .resetn(resetn),
+    .word_address(translator_word_address),
+    .bit_offset(translator_bit_offset),
+    .word_and_offset_valid(translator_word_and_offset_valid),
+    .curr_word(msys_to_writer_data),
+    .addr(writer_addr),
+    .word_with_pixel_written(writer_word_with_pixel_written),
+    .we(writer_we)
   );
 
   initial

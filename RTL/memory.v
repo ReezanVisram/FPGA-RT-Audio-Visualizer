@@ -18,9 +18,21 @@ module memory
 
   always @(posedge clk)
   begin
-    if (we)
-      mem[wraddr] <= wrdata;
-    
-    rddata <= mem[rdaddr];
+    if (reset)
+    begin
+      `ifndef SYNTHESIS
+        for (i = 0; i < (2 ** ADDR_LENGTH) - 1; i = i + 1)
+        begin
+          mem[i] <= i;
+        end
+      `endif
+    end
+    else
+    begin
+      if (we)
+        mem[wraddr] <= wrdata;
+      
+      rddata <= mem[rdaddr];
+    end
   end
 endmodule

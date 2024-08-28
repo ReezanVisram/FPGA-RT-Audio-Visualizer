@@ -12,16 +12,13 @@ module mono_sample_to_memory_addr_translator
   output reg fifo_rd_en,
   output reg [ADDRESS_LENGTH - 1:0] word_address,
   output reg [4:0] bit_offset,
-  output reg word_and_offset_valid,
-  output reg signed [10:0] test
+  output reg word_and_offset_valid
 );
   parameter [4:0] Idle = 5'b00001, ReadyToReadSample = 5'b00010, StoreSample = 5'b00100, ScaleSample1 = 5'b01000, ScaleSample2 = 5'b10000;
   reg [4:0] state = Idle;
   reg [9:0] sample_counter = 1'b0;
   reg signed [23:0] mono_sample_copy;
   reg signed [32:0] scaled_mono_sample;
-  reg signed [32:0] test2;
-
 
   always @(posedge clk)
   begin
@@ -84,8 +81,6 @@ module mono_sample_to_memory_addr_translator
       end
       default: // ScaleSample2
       begin
-        test <= $signed(scaled_mono_sample) >>> 23;
-        test2 <= $signed(288) - $signed(test);
         word_address <= ($signed(288) - $signed($signed(scaled_mono_sample) >>> 23)) * 24 + (sample_counter >> 5);
         bit_offset <= sample_counter % 32;
         word_and_offset_valid <= 1'b1;
