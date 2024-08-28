@@ -4,26 +4,21 @@ module sample_to_pixel
   parameter SCREEN_HEIGHT=480,
   parameter ADDR_WIDTH=$clog2(SCREEN_WIDTH * SCREEN_HEIGHT),
   parameter DATA_WIDTH=32,
-  parameter SAMPLE_WIDTH=24
+  parameter SAMPLE_WIDTH=24,
+  parameter COUNTER_WIDTH=$clog2(SCREEN_WIDTH)
 )(
   input clk,
   input resetn,
   // TODO: Add VGA Vsync signal to reset
   input signed [DATA_WIDTH - 1:0] mono_sample,
   input fifo_almost_empty,
-  input [ADDR_WIDTH - 1:0] bresenham_pixel_addr,
-  input bresenham_pixel_data,
-  input bresenham_complete,
-  input bresenham_valid, // Bresenham may be multicycle so need this to decide when to write row_addr and row_data
   output reg fifo_rd_en,
   output reg [ADDR_WIDTH - 1:0] pixel_addr,
   output reg pixel_data,
-  output reg pixel_wr_en,
-  output reg run_bresenham
+  output reg pixel_wr_en
 );
 
   localparam SCREEN_MIDDLE_ROW = (SCREEN_HEIGHT / 2) - 1;
-  localparam COUNTER_WIDTH = $clog2(SCREEN_WIDTH);
   
   parameter [6:0] WaitForSample=7'b0000001, 
                   ReadyToReadSample = 7'b0000010, 
@@ -36,10 +31,31 @@ module sample_to_pixel
   reg [6:0] state = WaitForSample;
   reg [COUNTER_WIDTH - 1:0] counter = {COUNTER_WIDTH{1'b0}};
   reg signed [SAMPLE_WIDTH - 1:0] sample_q;
-  reg signed [SAMPLE_WIDTH - 1:0] prev_sample_q;
 
   reg signed [$clog2(SCREEN_WIDTH) - 1:0] unclamped_row;
   reg [$clog2(SCREEN_WIDTH) - 1:0] row;
+  reg [$clog2(SCREEN_WIDTH) - 1:0] prev_row;
+
+  reg run_bresenham = 1'b0;
+
+  wire [ADDR_WIDTH - 1:0] bresenham_pixel_addr;
+  wire bresenham_pixel_data;
+  wire bresenham_complete;
+  wire bresenham_valid; // Bresenham may be multicycle so need this to decide when to write pixel_addr and pixel_data
+
+  bresenham br(
+    .clk(clk),
+    .resetn(resetn),
+    .start(run_bresenham),
+    .x1(counter - 1),
+    .y1(prev_row),
+    .x2(counter),
+    .y2(row),
+    .pixel_addr(bresenham_pixel_addr),
+    .pixel_data(bresenham_pixel_data),
+    .pixel_addr_and_data_valid(bresenham_valid),
+    .done(bresenham_complete)
+  );
 
   always @(posedge clk)
   begin
@@ -77,7 +93,10 @@ module sample_to_pixel
         end
         CalculatePixelAddr3:
         begin
-          state <= RunBresenham;
+          if (counter > 1)
+            state <= RunBresenham;
+          else
+            state <= WaitForSample;
         end
         default: // RunBresenham
         begin
@@ -107,7 +126,6 @@ module sample_to_pixel
       ReadSample:
       begin
         sample_q <= mono_sample[DATA_WIDTH - 1:(DATA_WIDTH - SAMPLE_WIDTH)];
-        prev_sample_q <= sample_q;
       end
       CalculatePixelAddr1:
       begin
@@ -115,12 +133,13 @@ module sample_to_pixel
       end
       CalculatePixelAddr2:
       begin
+        prev_row <= row;
         row <= $signed(SCREEN_MIDDLE_ROW) - $signed(unclamped_row);
       end
       CalculatePixelAddr3:
       begin
-        pixel_addr <= (row * SCREEN_WIDTH) + counter;
-        pixel_data <= 1'b1;
+        pixel_addr <= !run_bresenham ? (row * SCREEN_WIDTH) + counter : bresenham_pixel_addr;
+        pixel_data <= !run_bresenham ? 1'b1 : bresenham_pixel_data;
         pixel_wr_en <= 1'b1;
         counter <= counter + 1;
       end
@@ -129,9 +148,13 @@ module sample_to_pixel
         run_bresenham <= 1'b1;
         if (bresenham_valid)
         begin
-          pixel_addr <= bresenham_pixel_addr;
-          pixel_data <= bresenham_pixel_data;
+          pixel_addr <= run_bresenham ? bresenham_pixel_addr : (row * SCREEN_WIDTH) + counter;
+          pixel_data <= run_bresenham ? bresenham_pixel_data : 1'b1;
           pixel_wr_en <= 1'b1;
+        end
+        else
+        begin
+          pixel_wr_en <= 1'b0;
         end
       end
     endcase

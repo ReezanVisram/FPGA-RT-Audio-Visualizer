@@ -18,19 +18,18 @@ module tb_sample_to_pixel;
   wire [ADDR_WIDTH - 1:0] pixel_addr;
   wire pixel_data;
   wire pixel_wr_en;
-  wire run_bresenham;
+
+  integer f;
 
   sample_to_pixel dut(
     .clk(clk),
     .resetn(resetn),
     .mono_sample(mono_sample),
     .fifo_almost_empty(fifo_almost_empty),
-    .bresenham_complete(1'b1),
     .fifo_rd_en(fifo_rd_en),
     .pixel_addr(pixel_addr),
     .pixel_data(pixel_data),
-    .pixel_wr_en(pixel_wr_en),
-    .run_bresenham(run_bresenham)
+    .pixel_wr_en(pixel_wr_en)
   );
 
   framebuffer fbuffer(
@@ -44,11 +43,12 @@ module tb_sample_to_pixel;
   integer sample_line;
   reg signed [DATA_WIDTH - 1:0] sample_memory[0:NUM_SAMPLES - 1];
 
+
   integer i;
   integer j;
-
   initial 
   begin
+    f = $fopen("memory2.txt", "w");
     #15 resetn = 1'b1;
     $readmemb("samples.txt", sample_memory);
     for (sample_line = 0; sample_line < NUM_SAMPLES; sample_line = sample_line + 1)
@@ -58,11 +58,18 @@ module tb_sample_to_pixel;
       wait(fifo_rd_en == 1'b1);
       @(posedge clk);
       fifo_almost_empty <= 1'b1;
-      
-      wait(pixel_wr_en == 1'b1);
-      $display("%0d", pixel_addr);
     end
 
+    for (i = 0; i < SCREEN_HEIGHT; i = i + 1)
+    begin
+      for (j = 0; j < SCREEN_WIDTH; j = j + 1)
+      begin
+        $fwrite(f, "%0b", fbuffer.ram[i * SCREEN_WIDTH + j]);
+      end
+      $fwrite(f, "\n");
+    end
+
+    $fclose(f);
     $writememb("memory.txt", fbuffer.ram);
     #200 $finish;
   end
