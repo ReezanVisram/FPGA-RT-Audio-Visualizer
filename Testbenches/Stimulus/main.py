@@ -74,14 +74,13 @@ def convert_smaples_to_memory():
             prev_i = i
 
             memory[row][i] = 1
-            print(row * 640 + i)
-            
+        
             i += 1
 
 def write_memory():
     with open('memory.txt', 'w') as f:
         for row in memory:
-            f.write("".join(str(v) for v in row) + "\n")
+            f.write("".join(str(v) + ",\n" for v in row))
 
 def draw_bitmap(bitmap, width, height, pixel_size=1):
     img_width = width

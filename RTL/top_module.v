@@ -9,54 +9,88 @@ module top_module(
     output line_in_mclk,
     output line_in_ws,
     output line_in_sck,
-    output test_led
+    output test_led,
+    output [3:0] red,
+    output [3:0] blue,
+    output [3:0] green,
+    output hsync,
+    output vsync
 );
 
-  wire clk_22_579MHz;
-  wire clk_35MHz;
+  localparam SYSCLK_PERIOD = 10;
+  localparam NUM_SAMPLES = 2000;
+  localparam DATA_WIDTH = 32;
+  localparam SCREEN_WIDTH=640;
+  localparam SCREEN_HEIGHT=480;
+  localparam ADDR_WIDTH=$clog2(SCREEN_WIDTH * SCREEN_HEIGHT);
+  localparam SAMPLE_WIDTH=24;
+  localparam COORD_WIDTH=16;
 
+  // Clock signals + Generation
+  wire clk_22_579MHz;
+  wire clk_25_2MHz;
+
+  wire resetn = (reset == 0) ? 1'b0 : 1'b1;
+
+  // Reading Samples
+  reg [DATA_WIDTH - 1:0] sample_memory [0:NUM_SAMPLES - 1];
+  reg [DATA_WIDTH - 1:0] sample;
+  integer sample_line;
+
+  // I2S Clocks
   wire mclk;
   wire sck;
   wire ws;
 
-  wire resetn = (reset == 0) ? 1'b0 : 1'b1;
-
+  // AXI Signals
   wire rx_tready;
   wire rx_tvalid;
-  wire [31:0] rx_tdata;
+  wire [DATA_WIDTH - 1:0] rx_tdata;
   wire rx_tlast;
- 
+
   wire tx_to_br_tready;
   wire br_to_tx_tvalid;
-  wire [31:0] br_to_tx_tdata;
+  wire [DATA_WIDTH - 1:0] br_to_tx_tdata;
   wire br_to_tx_tlast;
 
   wire conv_to_br_tready;
   wire br_to_conv_tvalid;
-  wire [31:0] br_to_conv_tdata;
+  wire [DATA_WIDTH - 1:0] br_to_conv_tdata;
   wire br_to_conv_tlast;
 
-  wire [31:0] mono_sample;
+  // Mono Sample
   wire mono_sample_valid;
-  
-  wire [31:0] fifo_to_translator_mono_sample;
-  wire fifo_almost_empty;
-  wire fifo_empty;
-  wire fifo_almost_full;
-  wire fifo_full;
-  wire translator_to_fifo_rd_en;
-  wire [13:0] translator_word_address;
-  wire [4:0] translator_bit_offset;
-  wire translator_word_and_offset_valid;
+  wire [DATA_WIDTH - 1:0] mono_sample;
 
-  clk_wiz_0 clk_gen
-  (
-    .clk_in1(clk_100MHz),         
+  // FIFO Control
+  wire fifo_empty;
+  wire fifo_almost_empty;
+  wire fifo_full;
+  wire fifo_almost_full;
+
+  // Sample To Pixel Signals
+  wire [DATA_WIDTH - 1:0] fifo_to_stp_mono_sample;
+  wire stp_to_fifo_rd_en;
+  wire [ADDR_WIDTH - 1:0] stp_to_fb_pixel_addr;
+  wire stp_to_fb_pixel_data;
+  wire stp_to_fb_pixel_wr_en;
+
+  // VGA Controller Signals
+  wire fb_to_controller_pixel_data;
+  wire controller_to_fb_rd_en;
+  wire [ADDR_WIDTH - 1:0] controller_to_fb_pixel_addr;
+  wire data_enable;
+  wire frame_pulse;
+  wire line_pulse;
+
+  clk_wiz_0 clk_generator(
+    .clk_in1(clk_100MHz),
     .clk_22_579MHz(clk_22_579MHz),
-    .clk_35MHz(clk_35MHz)
+    .clk_25_2MHz(clk_25_2MHz),
+    .locked(locked)
   );
 
-  i2s_controller i2s_master (
+  i2s_controller i2s_master(
     .clk(clk_22_579MHz),
     .resetn(resetn),
     .mclk(mclk),
@@ -71,7 +105,7 @@ module top_module(
     .M_AXIS_TVALID(rx_tvalid),
     .M_AXIS_TDATA(rx_tdata),
     .M_AXIS_TLAST(rx_tlast),
-
+    
     .sck(sck),
     .ws(ws),
     .sd(line_in_sdout)
@@ -96,13 +130,13 @@ module top_module(
     .M_AXIS_TREADY2(conv_to_br_tready)
   );
 
-  i2s_transmit tx(
+  i2s_transmit i2s_tx(
     .S_AXIS_ACLK(clk_22_579MHz),
     .S_AXIS_ARESETN(resetn),
-    .S_AXIS_TREADY(tx_to_br_tready),
-    .S_AXIS_TVALID(br_to_tx_tvalid),
     .S_AXIS_TDATA(br_to_tx_tdata),
     .S_AXIS_TLAST(br_to_tx_tlast),
+    .S_AXIS_TVALID(br_to_tx_tvalid),
+    .S_AXIS_TREADY(tx_to_br_tready),
 
     .sck(sck),
     .ws(ws),
@@ -112,36 +146,66 @@ module top_module(
   packet_to_mono_sample_converter conv(
     .S_AXIS_ACLK(clk_22_579MHz),
     .S_AXIS_ARESETN(resetn),
-    .S_AXIS_TREADY(conv_to_br_tready),
-    .S_AXIS_TVALID(br_to_conv_tvalid),
     .S_AXIS_TDATA(br_to_conv_tdata),
     .S_AXIS_TLAST(br_to_conv_tlast),
-    .mono_sample(mono_sample),
-    .mono_sample_valid(mono_sample_valid)
+    .S_AXIS_TVALID(br_to_conv_tvalid),
+    .S_AXIS_TREADY(conv_to_br_tready),
+
+    .mono_sample_valid(mono_sample_valid),
+    .mono_sample(mono_sample)
   );
 
-  fifo_generator_0 fifo_gen (
+  fifo_generator_0 mono_sample_fifo (
     .wr_clk(clk_22_579MHz),
-    .rd_clk(clk_35MHz),
+    .rd_clk(clk_100MHz),
     .din(mono_sample),
     .wr_en(mono_sample_valid),
-    .rd_en(translator_to_fifo_rd_en),
-    .dout(fifo_to_translator_mono_sample),
+    .rd_en(stp_to_fifo_rd_en),
+    .dout(fifo_to_stp_mono_sample),
     .full(fifo_full),
     .almost_full(fifo_almost_full),
     .empty(fifo_empty),
     .almost_empty(fifo_almost_empty)
   );
 
-  mono_sample_to_memory_addr_translator translator(
-    .clk(clk_35MHz),
+  sample_to_pixel stp(
+    .clk(clk_100MHz),
     .resetn(resetn),
-    .mono_sample(fifo_to_translator_mono_sample),
+    .frame_pulse(frame_pulse),
+    .mono_sample(fifo_to_stp_mono_sample),
     .fifo_almost_empty(fifo_almost_empty),
-    .fifo_rd_en(translator_to_fifo_rd_en),
-    .word_address(translator_word_address),
-    .bit_offset(translator_bit_offset),
-    .word_and_offset_valid(translator_word_and_offset_valid)
+    .fifo_rd_en(stp_to_fifo_rd_en),
+    .pixel_addr(stp_to_fb_pixel_addr),
+    .pixel_data(stp_to_fb_pixel_data),
+    .pixel_wr_en(stp_to_fb_pixel_wr_en)
+  );
+
+  framebuffer fbuffer(
+    .wrclk(clk_100MHz),
+    .rdclk(clk_25_2MHz),
+    .resetn(resetn),
+    .wr_en(stp_to_fb_pixel_wr_en),
+    .rd_en(controller_to_fb_rd_en),
+    .wr_addr(stp_to_fb_pixel_addr),
+    .rd_addr(controller_to_fb_pixel_addr),
+    .wr_data(stp_to_fb_pixel_data),
+    .rd_data(fb_to_controller_pixel_data)
+  );
+
+  vga_controller controller(
+    .clk(clk_25_2MHz),
+    .resetn(resetn),
+    .pixel_data(fb_to_controller_pixel_data),
+    .framebuffer_rd_en(controller_to_fb_rd_en),
+    .pixel_addr(controller_to_fb_pixel_addr),
+    .red(red),
+    .blue(blue),
+    .green(green),
+    .hsync(hsync),
+    .vsync(vsync),
+    .data_enable(data_enable),
+    .frame_pulse(frame_pulse),
+    .line_pulse(line_pulse)
   );
 
   assign line_out_mclk = mclk;
@@ -150,5 +214,5 @@ module top_module(
   assign line_in_mclk = mclk;
   assign line_in_ws = ws;
   assign line_in_sck = sck;
-  assign test_led = translator_bit_offset[2];
+  
 endmodule

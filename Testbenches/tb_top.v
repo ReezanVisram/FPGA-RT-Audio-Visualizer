@@ -81,6 +81,11 @@ module tb_top;
   wire frame_pulse;
   wire line_pulse;
 
+  integer f;
+  integer i;
+  integer j;
+  reg [999:0] filename;
+
   clk_wiz_0 clk_generator(
     .clk_in1(clk_100MHz),
     .clk_22_579MHz(clk_22_579MHz),
@@ -230,6 +235,23 @@ module tb_top;
     end
 
     #900 $finish;
+  end
+
+  always @(posedge frame_pulse)
+  begin
+    $sformat(filename, "memory_%d.txt", ((sample_line*2)/640));
+    f = $fopen(filename, "w");
+
+    for (i = 0; i < SCREEN_HEIGHT; i = i + 1)
+    begin
+      for (j = 0; j < SCREEN_WIDTH; j = j + 1)
+      begin
+        $fwrite(f, "%0b", fbuffer.ram[i * SCREEN_WIDTH + j]);
+      end
+      $fwrite(f, "\n");
+    end
+
+    $fclose(f);
   end
 
   always

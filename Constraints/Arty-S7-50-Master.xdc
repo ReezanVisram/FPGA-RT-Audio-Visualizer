@@ -52,8 +52,8 @@ set_property -dict { PACKAGE_PIN R18   IOSTANDARD LVCMOS33 } [get_ports { green[
 set_property -dict { PACKAGE_PIN T18   IOSTANDARD LVCMOS33 } [get_ports { green[3] }]; #IO_L10N_T1_D15_14 Sch=jb_n[2]
 set_property -dict { PACKAGE_PIN P14   IOSTANDARD LVCMOS33 } [get_ports { hsync }]; #IO_L11P_T1_SRCC_14 Sch=jb_p[3]
 set_property -dict { PACKAGE_PIN P15   IOSTANDARD LVCMOS33 } [get_ports { vsync }]; #IO_L11N_T1_SRCC_14 Sch=jb_n[3]
-set_property -dict { PACKAGE_PIN N15   IOSTANDARD LVCMOS33 } [get_ports { jb[6] }]; #IO_L12P_T1_MRCC_14 Sch=jb_p[4]
-set_property -dict { PACKAGE_PIN P16   IOSTANDARD LVCMOS33 } [get_ports { jb[7] }]; #IO_L12N_T1_MRCC_14 Sch=jb_n[4]
+# set_property -dict { PACKAGE_PIN N15   IOSTANDARD LVCMOS33 } [get_ports { jb[6] }]; #IO_L12P_T1_MRCC_14 Sch=jb_p[4]
+# set_property -dict { PACKAGE_PIN P16   IOSTANDARD LVCMOS33 } [get_ports { jb[7] }]; #IO_L12N_T1_MRCC_14 Sch=jb_n[4]
 
 ## Pmod Header JC
 set_property -dict { PACKAGE_PIN U15   IOSTANDARD LVCMOS33 } [get_ports { line_out_mclk }]; #IO_L18P_T2_A12_D28_14 Sch=jc1/ck_io[41]
