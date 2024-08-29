@@ -1,26 +1,28 @@
 `timescale 1ns / 1ps
 
-module tb_vga_sync_pulse_gen;
+module tb_vga_sync_ctrl_signal_gen;
   parameter CLK_PERIOD=40;
 
   reg clk = 1'b0;
   reg resetn = 1'b0;
-  wire [9:0] row;
-  wire [9:0] col;
+  wire [15:0] sx;
+  wire [15:0] sy;
   wire hsync;
   wire vsync;
   wire data_enable;
   wire frame_pulse;
+  wire line_pulse;
 
-  vga_sync_pulse_gen dut(
+  vga_sync_ctrl_signal_gen dut(
     .clk(clk),
     .resetn(resetn),
-    .row(row),
-    .col(col),
+    .sx(sx),
+    .sy(sy),
     .hsync(hsync),
     .vsync(vsync),
     .data_enable(data_enable),
-    .frame_pulse(frame_pulse)
+    .frame_pulse(frame_pulse),
+    .line_pulse(line_pulse)
   );
 
   reg [5:0] frame_counter = 6'b0;
@@ -36,7 +38,7 @@ module tb_vga_sync_pulse_gen;
     $finish;
   end
 
-  always @(negedge vsync)
+  always @(posedge frame_pulse)
   begin
     frame_counter <= frame_counter + 1;
   end
