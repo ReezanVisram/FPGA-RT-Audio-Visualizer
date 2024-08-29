@@ -58,7 +58,6 @@ def convert_smaples_to_memory():
                 if not wrote_memory:
                     write_memory()
                     wrote_memory = True
-                    break
                 draw_bitmap(memory, 640, 480)
                 memory = [[0 for _ in range(640)] for _ in range(480)]
                 i = 0

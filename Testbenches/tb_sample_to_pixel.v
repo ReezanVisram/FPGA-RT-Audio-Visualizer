@@ -43,7 +43,6 @@ module tb_sample_to_pixel;
   integer sample_line;
   reg signed [DATA_WIDTH - 1:0] sample_memory[0:NUM_SAMPLES - 1];
 
-
   integer i;
   integer j;
   initial 

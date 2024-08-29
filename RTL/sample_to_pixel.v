@@ -5,7 +5,7 @@ module sample_to_pixel
   parameter ADDR_WIDTH=$clog2(SCREEN_WIDTH * SCREEN_HEIGHT),
   parameter DATA_WIDTH=32,
   parameter SAMPLE_WIDTH=24,
-  parameter COUNTER_WIDTH=$clog2(SCREEN_WIDTH)
+  parameter COORD_WIDTH=16
 )(
   input clk,
   input resetn,
@@ -29,12 +29,12 @@ module sample_to_pixel
                   RunBresenham = 7'b1000000;
   
   reg [6:0] state = WaitForSample;
-  reg [COUNTER_WIDTH - 1:0] counter = {COUNTER_WIDTH{1'b0}};
+  reg signed [COORD_WIDTH - 1:0] counter = {COORD_WIDTH{1'b0}};
   reg signed [SAMPLE_WIDTH - 1:0] sample_q;
 
-  reg signed [$clog2(SCREEN_WIDTH) - 1:0] unclamped_row;
-  reg [$clog2(SCREEN_WIDTH) - 1:0] row;
-  reg [$clog2(SCREEN_WIDTH) - 1:0] prev_row;
+  reg signed [COORD_WIDTH - 1:0] unclamped_row;
+  reg signed [COORD_WIDTH - 1:0] row;
+  reg signed [COORD_WIDTH - 1:0] prev_row;
 
   reg run_bresenham = 1'b0;
 
@@ -62,7 +62,7 @@ module sample_to_pixel
     if (!resetn)
     begin
       state <= WaitForSample;
-      counter <= {COUNTER_WIDTH{1'b0}};
+      counter <= {COORD_WIDTH{1'b0}};
       run_bresenham <= 1'b0;
     end
     else

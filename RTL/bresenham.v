@@ -5,15 +5,15 @@ module bresenham
   parameter ADDR_WIDTH=$clog2(SCREEN_WIDTH * SCREEN_HEIGHT),
   parameter DATA_WIDTH=32,
   parameter SAMPLE_WIDTH=24,
-  parameter COUNTER_WIDTH = $clog2(SCREEN_WIDTH)
+  parameter COORD_WIDTH=16
 )(
   input clk,
   input resetn,
   input start,
-  input [COUNTER_WIDTH - 1:0] x1,
-  input [$clog2(SCREEN_WIDTH) - 1:0] y1,
-  input [COUNTER_WIDTH - 1:0] x2,
-  input [$clog2(SCREEN_WIDTH) - 1:0] y2,
+  input signed [COORD_WIDTH - 1:0] x1,
+  input signed [COORD_WIDTH - 1:0] y1,
+  input signed [COORD_WIDTH - 1:0] x2,
+  input [COORD_WIDTH - 1:0] y2,
   output reg [ADDR_WIDTH - 1:0] pixel_addr,
   output reg pixel_data,
   output reg pixel_addr_and_data_valid,
@@ -29,15 +29,15 @@ module bresenham
   reg [5:0] state = Idle;
 
   reg swap;
-  reg [$clog2(SCREEN_WIDTH) - 1:0] xa, ya;
-  reg [$clog2(SCREEN_WIDTH) - 1:0] xb, yb;
-  reg [$clog2(SCREEN_WIDTH) - 1:0] x_end, y_end;
+  reg signed [COORD_WIDTH - 1:0] xa, ya;
+  reg signed [COORD_WIDTH - 1:0] xb, yb;
+  reg signed [COORD_WIDTH - 1:0] x_end, y_end;
 
-  reg [$clog2(SCREEN_WIDTH) - 1:0] x, y;
+  reg signed [COORD_WIDTH - 1:0] x, y;
 
   // A bit wider since they are signed
-  reg signed [$clog2(SCREEN_WIDTH):0] err;
-  reg signed [$clog2(SCREEN_WIDTH):0] dx, dy;
+  reg signed [COORD_WIDTH:0] err;
+  reg signed [COORD_WIDTH:0] dx, dy;
 
   reg movx, movy;
  
