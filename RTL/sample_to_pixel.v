@@ -9,7 +9,7 @@ module sample_to_pixel
 )(
   input clk,
   input resetn,
-  // TODO: Add VGA Vsync signal to reset
+  input frame_pulse,
   input signed [DATA_WIDTH - 1:0] mono_sample,
   input fifo_almost_empty,
   output reg fifo_rd_en,
@@ -20,15 +20,16 @@ module sample_to_pixel
 
   localparam SCREEN_MIDDLE_ROW = (SCREEN_HEIGHT / 2) - 1;
   
-  parameter [6:0] WaitForSample=7'b0000001, 
-                  ReadyToReadSample = 7'b0000010, 
-                  ReadSample = 7'b0000100, 
-                  CalculatePixelAddr1 = 7'b0001000,
-                  CalculatePixelAddr2 = 7'b0010000,
-                  CalculatePixelAddr3 = 7'b0100000, 
-                  RunBresenham = 7'b1000000;
+  parameter [7:0] WaitForSample=8'b00000001, 
+                  ReadyToReadSample = 8'b00000010, 
+                  ReadSample = 8'b00000100, 
+                  CalculatePixelAddr1 = 8'b00001000,
+                  CalculatePixelAddr2 = 8'b00010000,
+                  CalculatePixelAddr3 = 8'b00100000, 
+                  RunBresenham = 8'b01000000,
+                  WaitForNextFrame = 8'b10000000;
   
-  reg [6:0] state = WaitForSample;
+  reg [7:0] state = WaitForSample;
   reg signed [COORD_WIDTH - 1:0] counter = {COORD_WIDTH{1'b0}};
   reg signed [SAMPLE_WIDTH - 1:0] sample_q;
 
@@ -42,6 +43,12 @@ module sample_to_pixel
   wire bresenham_pixel_data;
   wire bresenham_complete;
   wire bresenham_valid; // Bresenham may be multicycle so need this to decide when to write pixel_addr and pixel_data
+
+  reg frame_pulse1;
+  reg frame_pulse1_d;
+  reg frame_pulse1_dd;
+
+  reg start_of_new_frame = 1'b0;
 
   bresenham br(
     .clk(clk),
@@ -64,6 +71,7 @@ module sample_to_pixel
       state <= WaitForSample;
       counter <= {COORD_WIDTH{1'b0}};
       run_bresenham <= 1'b0;
+      start_of_new_frame <= 1'b0;
     end
     else
     begin
@@ -98,12 +106,24 @@ module sample_to_pixel
           else
             state <= WaitForSample;
         end
-        default: // RunBresenham
+        RunBresenham:
         begin
           if (bresenham_complete)
-            state <= WaitForSample;
+          begin
+            if (counter == SCREEN_WIDTH - 1)
+              state <= WaitForNextFrame;
+            else
+              state <= WaitForSample;
+          end
           else
             state <= RunBresenham;
+        end
+        default: // WaitForNextFrame
+        begin
+          if (start_of_new_frame)
+            state <= WaitForSample;
+          else
+            state <= WaitForNextFrame;
         end
       endcase
     end
@@ -143,7 +163,7 @@ module sample_to_pixel
         pixel_wr_en <= 1'b1;
         counter <= counter + 1;
       end
-      default: // RunBresenham
+      RunBresenham:
       begin
         run_bresenham <= 1'b1;
         if (bresenham_valid)
@@ -157,7 +177,28 @@ module sample_to_pixel
           pixel_wr_en <= 1'b0;
         end
       end
+      default: // WaitForNextFrame
+      begin
+        counter <= 1'b0;
+      end
     endcase
+  end
+
+  // Cross frame_pulse from 25.2 MHz clock domain to 100 MHz clock domain
+  always @(posedge clk)
+  begin
+    frame_pulse1 <= frame_pulse;
+    frame_pulse1_d <= frame_pulse1;
+    frame_pulse1_dd <= frame_pulse1_d;
+
+    if (frame_pulse1_dd == 1'b0 && frame_pulse1_d == 1'b1)
+    begin
+      start_of_new_frame <= 1'b1;
+    end
+    else
+    begin
+      start_of_new_frame <= 1'b0;
+    end
   end
 
 endmodule

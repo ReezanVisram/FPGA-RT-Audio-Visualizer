@@ -7,12 +7,13 @@ module tb_sample_to_pixel;
   localparam DATA_WIDTH=32;
   localparam SMAPLE_WIDTH=24;
   localparam CLK_PERIOD=20;
-  localparam NUM_SAMPLES=640;
+  localparam NUM_SAMPLES=639;
 
   reg clk = 1'b0;
   reg resetn = 1'b0;
   reg signed [DATA_WIDTH - 1:0] mono_sample = {DATA_WIDTH{1'b0}};
   reg fifo_almost_empty = 1'b1;
+  reg frame_pulse = 1'b0;
   
   wire fifo_rd_en;
   wire [ADDR_WIDTH - 1:0] pixel_addr;
@@ -29,7 +30,8 @@ module tb_sample_to_pixel;
     .fifo_rd_en(fifo_rd_en),
     .pixel_addr(pixel_addr),
     .pixel_data(pixel_data),
-    .pixel_wr_en(pixel_wr_en)
+    .pixel_wr_en(pixel_wr_en),
+    .frame_pulse(frame_pulse)
   );
 
   framebuffer fbuffer(

@@ -49,10 +49,6 @@ module packet_to_mono_sample_converter
     if (!S_AXIS_ARESETN)
     begin
       state <= AcceptData;
-      `ifndef SYNTHESIS
-        samples[0] <= {DATA_WIDTH{1'b0}};
-        samples[1] <= {DATA_WIDTH{1'b0}};
-      `endif
     end
     else
     begin
@@ -85,25 +81,41 @@ module packet_to_mono_sample_converter
   always @(posedge S_AXIS_ACLK)
   begin
     mono_sample_valid <= 1'b0;
-    case (state)
-      AcceptData:
-      begin
-        samples[sample_counter] <= S_AXIS_TDATA;
-      end
-      StoreData1:
-      begin
-        sample_counter <= sample_counter + 1;
-      end
-      StoreData2:
-      begin
-        sample_counter <= sample_counter + 1;
-      end
-      default: // CalculateMono
-      begin
-        mono_sample <= (samples[0] + samples[1]) >> 1;
-        mono_sample_valid <= 1'b1;
-      end
-    endcase
+    if (!S_AXIS_ARESETN)
+    begin
+      `ifndef SYNTHESIS
+        samples[0] <= {DATA_WIDTH{1'b0}};
+        samples[1] <= {DATA_WIDTH{1'b0}};
+      `endif
+    end
+    else
+    begin
+      case (state)
+        AcceptData:
+        begin
+          samples[sample_counter] <= S_AXIS_TDATA;
+        end
+        StoreData1:
+        begin
+          sample_counter <= sample_counter + 1;
+        end
+        StoreData2:
+        begin
+          sample_counter <= sample_counter + 1;
+        end
+        default: // CalculateMono
+        begin
+          mono_sample <= (samples[0] + samples[1]) >> 1;
+          mono_sample_valid <= 1'b1;
+          `ifndef SYNTHESIS
+            if (^samples[0] === 1'bX || ^samples[1] === 1'bX)
+              mono_sample_valid <= 1'b0;
+          `endif
+
+        end
+      endcase
+    end
+
   end
 
   always @(*)
