@@ -2,21 +2,25 @@
 module tb_top;
   // Parameters
   localparam SYSCLK_PERIOD = 10;
-  localparam NUM_SAMPLES = 2000;
+  localparam NUM_SAMPLES = 44100;
   localparam DATA_WIDTH = 32;
-  localparam ADDRESS_LENGTH = 14;
+  localparam SCREEN_WIDTH=640;
+  localparam SCREEN_HEIGHT=480;
+  localparam ADDR_WIDTH=$clog2(SCREEN_WIDTH * SCREEN_HEIGHT);
+  localparam SAMPLE_WIDTH=24;
+  localparam COORD_WIDTH=16;
 
   reg resetn = 1'b0;
 
   // Clock signals + Generation
   reg clk_100MHz = 1'b0;
   wire clk_22_579MHz;
-  wire clk_35MHz;
+  wire clk_25_2MHz;
   wire locked;
 
   // Reading Samples
-  reg [DATA_WIDTH - 1:0] sample_memory [0:NUM_SAMPLES - 1];
-  reg [DATA_WIDTH - 1:0] sample;
+  reg signed [DATA_WIDTH - 1:0] sample_memory [0:NUM_SAMPLES - 1];
+  reg signed [DATA_WIDTH - 1:0] sample;
   integer sample_line;
 
   // I2S Clocks
@@ -34,22 +38,22 @@ module tb_top;
   // AXI Signals
   wire rx_tready;
   wire rx_tvalid;
-  wire [DATA_WIDTH - 1:0] rx_tdata;
+  wire signed [DATA_WIDTH - 1:0] rx_tdata;
   wire rx_tlast;
 
   wire tx_to_br_tready;
   wire br_to_tx_tvalid;
-  wire [DATA_WIDTH - 1:0] br_to_tx_tdata;
+  wire signed [DATA_WIDTH - 1:0] br_to_tx_tdata;
   wire br_to_tx_tlast;
 
   wire conv_to_br_tready;
   wire br_to_conv_tvalid;
-  wire [DATA_WIDTH - 1:0] br_to_conv_tdata;
+  wire signed [DATA_WIDTH - 1:0] br_to_conv_tdata;
   wire br_to_conv_tlast;
 
   // Mono Sample
   wire mono_sample_valid;
-  wire [DATA_WIDTH - 1:0] mono_sample;
+  wire signed [SAMPLE_WIDTH - 1:0] mono_sample;
 
   // FIFO Control
   wire fifo_empty;
@@ -57,25 +61,50 @@ module tb_top;
   wire fifo_full;
   wire fifo_almost_full;
 
-  // Translator Control
-  wire [DATA_WIDTH - 1:0] fifo_to_translator_mono_sample;
-  wire translator_to_fifo_rd_en;
+  // Sample To Pixel Signals
+  wire signed [SAMPLE_WIDTH - 1:0] fifo_to_stp_mono_sample;
+  wire stp_to_fifo_rd_en;
+  wire [ADDR_WIDTH - 1:0] stp_to_fb_pixel_addr;
+  wire stp_to_fb_pixel_data;
+  wire stp_to_fb_pixel_wr_en;
 
-  // Translator Output
-  wire [ADDRESS_LENGTH - 1:0] translator_word_address;
-  wire [4:0] translator_bit_offset;
-  wire translator_word_and_offset_valid;
+  // VGA Controller Signals
+  wire fb_to_controller_pixel_data;
+  wire controller_to_fb_rd_en;
+  wire [ADDR_WIDTH - 1:0] controller_to_fb_pixel_addr;
+  wire [3:0] red;
+  wire [3:0] green;
+  wire [3:0] blue;
+  wire hsync;
+  wire vsync;
+  wire data_enable;
+  wire frame_pulse;
+  wire line_pulse;
 
-  // Writer Input/Output
-  wire writer_we;
-  wire [ADDRESS_LENGTH - 1:0] writer_addr;
-  wire [DATA_WIDTH - 1:0] writer_word_with_pixel_written;
-  wire [DATA_WIDTH - 1:0] msys_to_writer_data;
+  // Framebuffer Manager
+  wire [ADDR_WIDTH - 1:0] fbuffer_mgr_pixel_addr;
+  wire fbuffer_mgr_pixel_data;
+  wire fbuffer_mgr_pixel_wr_en;
+  wire fbuffer_mgr_clearing_framebuffer;
+  wire buffer_sel;
+
+  wire fb_to_controller_pixel_data0;
+  wire fb_to_controller_pixel_data1;
+
+  wire [ADDR_WIDTH - 1:0] fbuffer_wr_addr;
+  wire fbuffer_wr_data;
+  wire fbuffer_wr_en;
+
+  // File I/O
+  integer f;
+  integer i;
+  integer j;
+  reg [999:0] filename;
 
   clk_wiz_0 clk_generator(
     .clk_in1(clk_100MHz),
     .clk_22_579MHz(clk_22_579MHz),
-    .clk_35MHz(clk_35MHz),
+    .clk_25_2MHz(clk_25_2MHz),
     .locked(locked)
   );
 
@@ -146,48 +175,79 @@ module tb_top;
 
   fifo_generator_0 mono_sample_fifo (
     .wr_clk(clk_22_579MHz),
-    .rd_clk(clk_35MHz),
+    .rd_clk(clk_100MHz),
     .din(mono_sample),
     .wr_en(mono_sample_valid),
-    .rd_en(translator_to_fifo_rd_en),
-    .dout(fifo_to_translator_mono_sample),
+    .rd_en(stp_to_fifo_rd_en),
+    .dout(fifo_to_stp_mono_sample),
     .full(fifo_full),
     .almost_full(fifo_almost_full),
     .empty(fifo_empty),
     .almost_empty(fifo_almost_empty)
   );
 
-  mono_sample_to_memory_addr_translator translator(
-    .clk(clk_35MHz),
+  sample_to_pixel stp(
+    .clk(clk_100MHz),
     .resetn(resetn),
-    .mono_sample(fifo_to_translator_mono_sample),
+    .frame_pulse(frame_pulse),
+    .mono_sample(fifo_to_stp_mono_sample),
     .fifo_almost_empty(fifo_almost_empty),
-    .fifo_rd_en(translator_to_fifo_rd_en),
-    .word_address(translator_word_address),
-    .bit_offset(translator_bit_offset),
-    .word_and_offset_valid(translator_word_and_offset_valid)
+    .clearing_framebuffer(fbuffer_mgr_clearing_framebuffer),
+    .fifo_rd_en(stp_to_fifo_rd_en),
+    .pixel_addr(stp_to_fb_pixel_addr),
+    .pixel_data(stp_to_fb_pixel_data),
+    .pixel_wr_en(stp_to_fb_pixel_wr_en)
   );
 
-  memory msys1(
-    .clk(clk_35MHz),
-    .reset(~resetn),
-    .we(writer_we),
-    .rdaddr(writer_addr),
-    .wraddr(writer_addr),
-    .wrdata(writer_word_with_pixel_written),
-    .rddata(msys_to_writer_data)
-  );
-
-  addr_to_pixel_writer writer(
-    .clk(clk_35MHz),
+  framebuffer_manager fbuffer_mgr(
+    .clk(clk_100MHz),
     .resetn(resetn),
-    .word_address(translator_word_address),
-    .bit_offset(translator_bit_offset),
-    .word_and_offset_valid(translator_word_and_offset_valid),
-    .curr_word(msys_to_writer_data),
-    .addr(writer_addr),
-    .word_with_pixel_written(writer_word_with_pixel_written),
-    .we(writer_we)
+    .frame_pulse(frame_pulse),
+    .pixel_addr(fbuffer_mgr_pixel_addr),
+    .pixel_wr_en(fbuffer_mgr_pixel_wr_en),
+    .pixel_data(fbuffer_mgr_pixel_data),
+    .clearing_framebuffer(fbuffer_mgr_clearing_framebuffer),
+    .buffer_sel(buffer_sel)
+  );
+
+  framebuffer fbuffer0(
+    .wrclk(clk_100MHz),
+    .rdclk(clk_25_2MHz),
+    .resetn(resetn),
+    .wr_en(buffer_sel && fbuffer_wr_en),
+    .rd_en(controller_to_fb_rd_en),
+    .wr_addr(fbuffer_wr_addr),
+    .rd_addr(controller_to_fb_pixel_addr),
+    .wr_data(fbuffer_wr_data),
+    .rd_data(fb_to_controller_pixel_data0)
+  );
+
+  framebuffer fbuffer1(
+    .wrclk(clk_100MHz),
+    .rdclk(clk_25_2MHz),
+    .resetn(resetn),
+    .wr_en(!buffer_sel && fbuffer_wr_en),
+    .rd_en(controller_to_fb_rd_en),
+    .wr_addr(fbuffer_wr_addr),
+    .rd_addr(controller_to_fb_pixel_addr),
+    .wr_data(fbuffer_wr_data),
+    .rd_data(fb_to_controller_pixel_data1)
+  );
+
+  vga_controller controller(
+    .clk(clk_25_2MHz),
+    .resetn(resetn),
+    .pixel_data(fb_to_controller_pixel_data),
+    .framebuffer_rd_en(controller_to_fb_rd_en),
+    .pixel_addr(controller_to_fb_pixel_addr),
+    .red(red),
+    .blue(blue),
+    .green(green),
+    .hsync(hsync),
+    .vsync(vsync),
+    .data_enable(data_enable),
+    .frame_pulse(frame_pulse),
+    .line_pulse(line_pulse)
   );
 
   initial
@@ -199,9 +259,10 @@ module tb_top;
     $readmemb("samples.txt", sample_memory);
 
     wait(ws == 1'b1);
+    wait(ws == 1'b0);
     for (sample_line = 0; sample_line < NUM_SAMPLES; sample_line = sample_line + 1)
     begin
-      sample = sample_memory[sample_line];
+      sample = 32'h00000000;
 
       repeat(DATA_WIDTH) // We want to output the 24 bit sample, then another 8 cycles of don't cares
       begin
@@ -215,9 +276,45 @@ module tb_top;
     #900 $finish;
   end
 
+  always @(posedge frame_pulse)
+  begin
+    $sformat(filename, "memory0_%d.txt", ((sample_line*2)/640));
+    f = $fopen(filename, "w");
+
+    for (i = 0; i < SCREEN_HEIGHT; i = i + 1)
+    begin
+      for (j = 0; j < SCREEN_WIDTH; j = j + 1)
+      begin
+        $fwrite(f, "%0b", fbuffer0.ram[i * SCREEN_WIDTH + j]);
+      end
+      $fwrite(f, "\n");
+    end
+
+    $fclose(f);
+    
+    $sformat(filename, "memory1_%d.txt", ((sample_line*2)/640));
+    f = $fopen(filename, "w");
+
+    for (i = 0; i < SCREEN_HEIGHT; i = i + 1)
+    begin
+      for (j = 0; j < SCREEN_WIDTH; j = j + 1)
+      begin
+        $fwrite(f, "%0b", fbuffer1.ram[i * SCREEN_WIDTH + j]);
+      end
+      $fwrite(f, "\n");
+    end
+
+    $fclose(f);
+  end
+
   always
   begin
     #(SYSCLK_PERIOD/2) clk_100MHz <= ~clk_100MHz;
   end
+
+  assign fbuffer_wr_addr = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_addr : stp_to_fb_pixel_addr;
+  assign fbuffer_wr_data = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_data : stp_to_fb_pixel_data;
+  assign fbuffer_wr_en = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_wr_en : stp_to_fb_pixel_wr_en;
+  assign fb_to_controller_pixel_data = buffer_sel ? fb_to_controller_pixel_data1 : fb_to_controller_pixel_data0;
 
 endmodule

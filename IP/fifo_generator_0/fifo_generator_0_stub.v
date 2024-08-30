@@ -2,7 +2,7 @@
 // Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
 // --------------------------------------------------------------------------------
 // Tool Version: Vivado v.2023.2 (win64) Build 4029153 Fri Oct 13 20:14:34 MDT 2023
-// Date        : Mon Aug 26 16:22:31 2024
+// Date        : Thu Aug 29 20:52:28 2024
 // Host        : DESKTOP-N8LM7HE running 64-bit major release  (build 9200)
 // Command     : write_verilog -force -mode synth_stub
 //               d:/Projects/FPGA_RT_Audio_Processor/IP/fifo_generator_0/fifo_generator_0_stub.v
@@ -17,15 +17,15 @@
 (* x_core_info = "fifo_generator_v13_2_9,Vivado 2023.2" *)
 module fifo_generator_0(wr_clk, rd_clk, din, wr_en, rd_en, dout, full, 
   almost_full, empty, almost_empty)
-/* synthesis syn_black_box black_box_pad_pin="din[31:0],wr_en,rd_en,dout[31:0],full,almost_full,empty,almost_empty" */
+/* synthesis syn_black_box black_box_pad_pin="din[23:0],wr_en,rd_en,dout[23:0],full,almost_full,empty,almost_empty" */
 /* synthesis syn_force_seq_prim="wr_clk" */
 /* synthesis syn_force_seq_prim="rd_clk" */;
   input wr_clk /* synthesis syn_isclock = 1 */;
   input rd_clk /* synthesis syn_isclock = 1 */;
-  input [31:0]din;
+  input [23:0]din;
   input wr_en;
   input rd_en;
-  output [31:0]dout;
+  output [23:0]dout;
   output full;
   output almost_full;
   output empty;
