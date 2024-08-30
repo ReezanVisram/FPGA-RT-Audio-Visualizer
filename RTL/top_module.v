@@ -32,11 +32,6 @@ module top_module(
 
   wire resetn = (reset == 0) ? 1'b0 : 1'b1;
 
-  // Reading Samples
-  reg [DATA_WIDTH - 1:0] sample_memory [0:NUM_SAMPLES - 1];
-  reg [DATA_WIDTH - 1:0] sample;
-  integer sample_line;
-
   // I2S Clocks
   wire mclk;
   wire sck;
@@ -45,22 +40,22 @@ module top_module(
   // AXI Signals
   wire rx_tready;
   wire rx_tvalid;
-  wire [DATA_WIDTH - 1:0] rx_tdata;
+  wire signed [DATA_WIDTH - 1:0] rx_tdata;
   wire rx_tlast;
 
   wire tx_to_br_tready;
   wire br_to_tx_tvalid;
-  wire [DATA_WIDTH - 1:0] br_to_tx_tdata;
+  wire signed [DATA_WIDTH - 1:0] br_to_tx_tdata;
   wire br_to_tx_tlast;
 
   wire conv_to_br_tready;
   wire br_to_conv_tvalid;
-  wire [DATA_WIDTH - 1:0] br_to_conv_tdata;
+  wire signed [DATA_WIDTH - 1:0] br_to_conv_tdata;
   wire br_to_conv_tlast;
 
   // Mono Sample
   wire mono_sample_valid;
-  wire [DATA_WIDTH - 1:0] mono_sample;
+  wire signed [DATA_WIDTH - 1:0] mono_sample;
 
   // FIFO Control
   wire fifo_empty;

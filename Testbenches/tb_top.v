@@ -19,8 +19,8 @@ module tb_top;
   wire locked;
 
   // Reading Samples
-  reg [DATA_WIDTH - 1:0] sample_memory [0:NUM_SAMPLES - 1];
-  reg [DATA_WIDTH - 1:0] sample;
+  reg signed [DATA_WIDTH - 1:0] sample_memory [0:NUM_SAMPLES - 1];
+  reg signed [DATA_WIDTH - 1:0] sample;
   integer sample_line;
 
   // I2S Clocks
@@ -38,22 +38,22 @@ module tb_top;
   // AXI Signals
   wire rx_tready;
   wire rx_tvalid;
-  wire [DATA_WIDTH - 1:0] rx_tdata;
+  wire signed [DATA_WIDTH - 1:0] rx_tdata;
   wire rx_tlast;
 
   wire tx_to_br_tready;
   wire br_to_tx_tvalid;
-  wire [DATA_WIDTH - 1:0] br_to_tx_tdata;
+  wire signed [DATA_WIDTH - 1:0] br_to_tx_tdata;
   wire br_to_tx_tlast;
 
   wire conv_to_br_tready;
   wire br_to_conv_tvalid;
-  wire [DATA_WIDTH - 1:0] br_to_conv_tdata;
+  wire signed [DATA_WIDTH - 1:0] br_to_conv_tdata;
   wire br_to_conv_tlast;
 
   // Mono Sample
   wire mono_sample_valid;
-  wire [DATA_WIDTH - 1:0] mono_sample;
+  wire signed [DATA_WIDTH - 1:0] mono_sample;
 
   // FIFO Control
   wire fifo_empty;
@@ -62,7 +62,7 @@ module tb_top;
   wire fifo_almost_full;
 
   // Sample To Pixel Signals
-  wire [DATA_WIDTH - 1:0] fifo_to_stp_mono_sample;
+  wire signed [DATA_WIDTH - 1:0] fifo_to_stp_mono_sample;
   wire stp_to_fifo_rd_en;
   wire [ADDR_WIDTH - 1:0] stp_to_fb_pixel_addr;
   wire stp_to_fb_pixel_data;

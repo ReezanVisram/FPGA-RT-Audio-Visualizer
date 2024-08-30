@@ -5,7 +5,7 @@ module i2s_transmit
 (
   input S_AXIS_ACLK,
   input S_AXIS_ARESETN,
-  input [DATA_WIDTH - 1:0] S_AXIS_TDATA,
+  input signed [DATA_WIDTH - 1:0] S_AXIS_TDATA,
   input S_AXIS_TLAST,
   input S_AXIS_TVALID,
 

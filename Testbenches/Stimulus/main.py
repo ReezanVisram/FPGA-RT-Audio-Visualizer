@@ -44,7 +44,12 @@ def sample_1_khz_sine():
     with open('samples.txt', 'w') as f:
         for sample in digital_signal:
             s = sample & 0xFFFFFF
-            f.write(f"{format(s, '024b')}00000000\n")
+            f.write(f"{format(s, '024b')}00000000\n") # Left Sample
+            f.write(f"{format(s, '024b')}00000000\n") # Right Sample
+
+    with open('samples_decimal.txt', 'w') as f:
+        for sample in digital_signal:
+            f.write(f"{str(sample)}\n")
 
 def convert_smaples_to_memory():
     global memory

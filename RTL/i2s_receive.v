@@ -7,7 +7,7 @@ module i2s_receive
   input M_AXIS_ARESETN,
   input M_AXIS_TREADY,
   output reg M_AXIS_TVALID,
-  output reg [DATA_WIDTH - 1:0] M_AXIS_TDATA,
+  output reg signed [DATA_WIDTH - 1:0] M_AXIS_TDATA,
   output reg M_AXIS_TLAST,
 
   input sck,

@@ -1,23 +1,25 @@
 module packet_to_mono_sample_converter
 #(
-  parameter DATA_WIDTH=32
+  parameter DATA_WIDTH=32,
+  parameter SAMPLE_WIDTH=24
 )
 (
   input S_AXIS_ACLK,
   input S_AXIS_ARESETN,
   input S_AXIS_TVALID,
   input S_AXIS_TLAST,
-  input [DATA_WIDTH - 1:0] S_AXIS_TDATA,
+  input signed [DATA_WIDTH - 1:0] S_AXIS_TDATA,
   output reg S_AXIS_TREADY,
 
   output reg mono_sample_valid,
-  output reg [DATA_WIDTH - 1:0] mono_sample
+  output reg signed [SAMPLE_WIDTH - 1:0] mono_sample
 );
   reg sample_counter = 1'b0;
-  reg [DATA_WIDTH - 1:0] samples [1:0];
+  reg signed [SAMPLE_WIDTH - 1:0] samples [1:0];
+  reg signed [SAMPLE_WIDTH:0] sum_samples;
 
-  parameter [1:0] AcceptData = 2'b00, StoreData1 = 2'b01, StoreData2 = 2'b11, CalculateMono = 2'b10;
-  reg [1:0] state = AcceptData;
+  parameter [4:0] AcceptData = 5'b00001, StoreData1 = 5'b00010, StoreData2 = 5'b00100, CalculateMono1 = 5'b01000, CalculateMono2 = 5'b10000;
+  reg [4:0] state = AcceptData;
 
   reg tvalidd;
   reg tvalid_rise;
@@ -68,9 +70,13 @@ module packet_to_mono_sample_converter
         end 
         StoreData2:
         begin
-          state <= CalculateMono;
+          state <= CalculateMono1;
         end
-        default: // Calculate Mono
+        CalculateMono1: // CalculateMono
+        begin
+          state <= CalculateMono2;
+        end
+        default: // CalculateMono2
         begin
           state <= AcceptData;
         end
@@ -84,8 +90,8 @@ module packet_to_mono_sample_converter
     if (!S_AXIS_ARESETN)
     begin
       `ifndef SYNTHESIS
-        samples[0] <= {DATA_WIDTH{1'b0}};
-        samples[1] <= {DATA_WIDTH{1'b0}};
+        samples[0] <= {SAMPLE_WIDTH{1'b0}};
+        samples[1] <= {SAMPLE_WIDTH{1'b0}};
       `endif
     end
     else
@@ -93,7 +99,8 @@ module packet_to_mono_sample_converter
       case (state)
         AcceptData:
         begin
-          samples[sample_counter] <= S_AXIS_TDATA;
+          samples[sample_counter] <= S_AXIS_TDATA[DATA_WIDTH - 1:(DATA_WIDTH - SAMPLE_WIDTH)];
+          sum_samples <= {DATA_WIDTH{1'b0}};
         end
         StoreData1:
         begin
@@ -103,15 +110,18 @@ module packet_to_mono_sample_converter
         begin
           sample_counter <= sample_counter + 1;
         end
-        default: // CalculateMono
+        CalculateMono1: // CalculateMono
         begin
-          mono_sample <= (samples[0] + samples[1]) >> 1;
+          sum_samples <= samples[0] + samples[1];
+        end
+        default: // CalculateMono2
+        begin
+          mono_sample <= sum_samples >>> 1;
           mono_sample_valid <= 1'b1;
           `ifndef SYNTHESIS
             if (^samples[0] === 1'bX || ^samples[1] === 1'bX)
               mono_sample_valid <= 1'b0;
           `endif
-
         end
       endcase
     end

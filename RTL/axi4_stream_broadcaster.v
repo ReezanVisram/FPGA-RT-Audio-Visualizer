@@ -6,17 +6,17 @@ module axi4_stream_broadcaster
   input AXIS_ACLK,
   input AXIS_ARESETN,
 
-  input [DATA_WIDTH - 1:0] S_AXIS_TDATA,
+  input signed [DATA_WIDTH - 1:0] S_AXIS_TDATA,
   input S_AXIS_TVALID,
   input S_AXIS_TLAST,
   output S_AXIS_TREADY,
 
-  output [DATA_WIDTH - 1:0] M_AXIS_TDATA1,
+  output signed [DATA_WIDTH - 1:0] M_AXIS_TDATA1,
   output M_AXIS_TVALID1,
   output M_AXIS_TLAST1,
   input M_AXIS_TREADY1,
 
-  output [DATA_WIDTH - 1:0] M_AXIS_TDATA2,
+  output signed [DATA_WIDTH - 1:0] M_AXIS_TDATA2,
   output M_AXIS_TVALID2,
   output M_AXIS_TLAST2,
   input M_AXIS_TREADY2

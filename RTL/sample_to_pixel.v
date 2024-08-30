@@ -10,7 +10,7 @@ module sample_to_pixel
   input clk,
   input resetn,
   input frame_pulse,
-  input signed [DATA_WIDTH - 1:0] mono_sample,
+  input signed [SAMPLE_WIDTH - 1:0] mono_sample,
   input fifo_almost_empty,
   output reg fifo_rd_en,
   output reg [ADDR_WIDTH - 1:0] pixel_addr,
@@ -145,7 +145,7 @@ module sample_to_pixel
       end
       ReadSample:
       begin
-        sample_q <= mono_sample[DATA_WIDTH - 1:(DATA_WIDTH - SAMPLE_WIDTH)];
+        sample_q <= mono_sample;
       end
       CalculatePixelAddr1:
       begin
