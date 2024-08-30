@@ -53,7 +53,7 @@ module tb_top;
 
   // Mono Sample
   wire mono_sample_valid;
-  wire signed [DATA_WIDTH - 1:0] mono_sample;
+  wire signed [SAMPLE_WIDTH - 1:0] mono_sample;
 
   // FIFO Control
   wire fifo_empty;
@@ -62,7 +62,7 @@ module tb_top;
   wire fifo_almost_full;
 
   // Sample To Pixel Signals
-  wire signed [DATA_WIDTH - 1:0] fifo_to_stp_mono_sample;
+  wire signed [SAMPLE_WIDTH - 1:0] fifo_to_stp_mono_sample;
   wire stp_to_fifo_rd_en;
   wire [ADDR_WIDTH - 1:0] stp_to_fb_pixel_addr;
   wire stp_to_fb_pixel_data;

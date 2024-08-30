@@ -73,13 +73,13 @@ input wire wr_clk;
 (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 read_clk CLK" *)
 input wire rd_clk;
 (* X_INTERFACE_INFO = "xilinx.com:interface:fifo_write:1.0 FIFO_WRITE WR_DATA" *)
-input wire [31 : 0] din;
+input wire [23 : 0] din;
 (* X_INTERFACE_INFO = "xilinx.com:interface:fifo_write:1.0 FIFO_WRITE WR_EN" *)
 input wire wr_en;
 (* X_INTERFACE_INFO = "xilinx.com:interface:fifo_read:1.0 FIFO_READ RD_EN" *)
 input wire rd_en;
 (* X_INTERFACE_INFO = "xilinx.com:interface:fifo_read:1.0 FIFO_READ RD_DATA" *)
-output wire [31 : 0] dout;
+output wire [23 : 0] dout;
 (* X_INTERFACE_INFO = "xilinx.com:interface:fifo_write:1.0 FIFO_WRITE FULL" *)
 output wire full;
 (* X_INTERFACE_INFO = "xilinx.com:interface:fifo_write:1.0 FIFO_WRITE ALMOST_FULL" *)
@@ -95,9 +95,9 @@ output wire almost_empty;
     .C_COUNT_TYPE(0),
     .C_DATA_COUNT_WIDTH(9),
     .C_DEFAULT_VALUE("BlankString"),
-    .C_DIN_WIDTH(32),
+    .C_DIN_WIDTH(24),
     .C_DOUT_RST_VAL("0"),
-    .C_DOUT_WIDTH(32),
+    .C_DOUT_WIDTH(24),
     .C_ENABLE_RLOCS(0),
     .C_FAMILY("spartan7"),
     .C_FULL_FLAGS_RST_VAL(0),

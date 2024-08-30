@@ -57,10 +57,10 @@
 fifo_generator_0 your_instance_name (
   .wr_clk(wr_clk),              // input wire wr_clk
   .rd_clk(rd_clk),              // input wire rd_clk
-  .din(din),                    // input wire [31 : 0] din
+  .din(din),                    // input wire [23 : 0] din
   .wr_en(wr_en),                // input wire wr_en
   .rd_en(rd_en),                // input wire rd_en
-  .dout(dout),                  // output wire [31 : 0] dout
+  .dout(dout),                  // output wire [23 : 0] dout
   .full(full),                  // output wire full
   .almost_full(almost_full),    // output wire almost_full
   .empty(empty),                // output wire empty
