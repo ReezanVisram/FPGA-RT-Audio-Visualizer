@@ -9,9 +9,10 @@ module sample_to_pixel
 )(
   input clk,
   input resetn,
-  input frame_pulse,
+  input frame_pulse, // In Pixel Clock domain
   input signed [SAMPLE_WIDTH - 1:0] mono_sample,
   input fifo_almost_empty,
+  input clearing_framebuffer,
   output reg fifo_rd_en,
   output reg [ADDR_WIDTH - 1:0] pixel_addr,
   output reg pixel_data,
@@ -69,16 +70,13 @@ module sample_to_pixel
     if (!resetn)
     begin
       state <= WaitForSample;
-      counter <= {COORD_WIDTH{1'b0}};
-      run_bresenham <= 1'b0;
-      start_of_new_frame <= 1'b0;
     end
     else
     begin
       case (state)
         WaitForSample:
         begin
-          if (!fifo_almost_empty)
+          if (!fifo_almost_empty && !clearing_framebuffer)
             state <= ReadyToReadSample;
           else
             state <= WaitForSample;
@@ -131,57 +129,66 @@ module sample_to_pixel
 
   always @(posedge clk)
   begin
-    fifo_rd_en <= 1'b0;
-    run_bresenham <= 1'b0;
-    pixel_wr_en <= 1'b0;
-    case (state)
-      WaitForSample:
-      begin
-        
-      end
-      ReadyToReadSample:
-      begin
-        fifo_rd_en <= 1'b1;
-      end
-      ReadSample:
-      begin
-        sample_q <= mono_sample;
-      end
-      CalculatePixelAddr1:
-      begin
-        unclamped_row <= $signed((($signed(SCREEN_MIDDLE_ROW) * sample_q) >>> 23));
-      end
-      CalculatePixelAddr2:
-      begin
-        prev_row <= row;
-        row <= $signed(SCREEN_MIDDLE_ROW) - $signed(unclamped_row);
-      end
-      CalculatePixelAddr3:
-      begin
-        pixel_addr <= !run_bresenham ? (row * SCREEN_WIDTH) + counter : bresenham_pixel_addr;
-        pixel_data <= !run_bresenham ? 1'b1 : bresenham_pixel_data;
-        pixel_wr_en <= 1'b1;
-        counter <= counter + 1;
-      end
-      RunBresenham:
-      begin
-        run_bresenham <= 1'b1;
-        if (bresenham_valid)
+    if (!resetn)
+    begin
+      counter <= {COORD_WIDTH{1'b0}};
+      run_bresenham <= 1'b0;
+    end
+    else
+    begin
+      fifo_rd_en <= 1'b0;
+      run_bresenham <= 1'b0;
+      pixel_wr_en <= 1'b0;
+
+      case (state)
+        WaitForSample:
         begin
-          pixel_addr <= run_bresenham ? bresenham_pixel_addr : (row * SCREEN_WIDTH) + counter;
-          pixel_data <= run_bresenham ? bresenham_pixel_data : 1'b1;
+          
+        end
+        ReadyToReadSample:
+        begin
+          fifo_rd_en <= 1'b1;
+        end
+        ReadSample:
+        begin
+          sample_q <= mono_sample;
+        end
+        CalculatePixelAddr1:
+        begin
+          unclamped_row <= $signed((($signed(SCREEN_MIDDLE_ROW) * sample_q) >>> 23));
+        end
+        CalculatePixelAddr2:
+        begin
+          prev_row <= row;
+          row <= $signed(SCREEN_MIDDLE_ROW) - $signed(unclamped_row);
+        end
+        CalculatePixelAddr3:
+        begin
+          pixel_addr <= !run_bresenham ? (row * SCREEN_WIDTH) + counter : bresenham_pixel_addr;
+          pixel_data <= !run_bresenham ? 1'b1 : bresenham_pixel_data;
           pixel_wr_en <= 1'b1;
+          counter <= counter + 1;
         end
-        else
+        RunBresenham:
         begin
-          pixel_wr_en <= 1'b0;
+          run_bresenham <= 1'b1;
+          if (bresenham_valid)
+          begin
+            pixel_addr <= run_bresenham ? bresenham_pixel_addr : (row * SCREEN_WIDTH) + counter;
+            pixel_data <= run_bresenham ? bresenham_pixel_data : 1'b1;
+            pixel_wr_en <= 1'b1;
+          end
+          else
+          begin
+            pixel_wr_en <= 1'b0;
+          end
         end
-      end
-      default: // WaitForNextFrame
-      begin
-        counter <= 1'b0;
-      end
-    endcase
+        default: // WaitForNextFrame
+        begin
+          counter <= 1'b0;
+        end
+      endcase
+    end
   end
 
   // Cross frame_pulse from 25.2 MHz clock domain to 100 MHz clock domain

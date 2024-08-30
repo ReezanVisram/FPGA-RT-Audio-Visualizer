@@ -71,12 +71,26 @@ module top_module(
   wire stp_to_fb_pixel_wr_en;
 
   // VGA Controller Signals
-  wire fb_to_controller_pixel_data;
+  wire fb_to_controller_pixel_data0;
+  wire fb_to_controller_pixel_data1;
   wire controller_to_fb_rd_en;
   wire [ADDR_WIDTH - 1:0] controller_to_fb_pixel_addr;
   wire data_enable;
   wire frame_pulse;
   wire line_pulse;
+
+  // Framebuffer Manager
+  wire [ADDR_WIDTH - 1:0] fbuffer_mgr_pixel_addr;
+  wire fbuffer_mgr_pixel_data;
+  wire fbuffer_mgr_pixel_wr_en;
+  wire fbuffer_mgr_clearing_framebuffer;
+  wire buffer_sel;
+
+  wire [ADDR_WIDTH - 1:0] fbuffer_wr_addr;
+  wire fbuffer_wr_data;
+  wire fbuffer_wr_en;
+
+  wire fb_to_controller_pixel_data;
 
   clk_wiz_0 clk_generator(
     .clk_in1(clk_100MHz),
@@ -169,22 +183,46 @@ module top_module(
     .frame_pulse(frame_pulse),
     .mono_sample(fifo_to_stp_mono_sample),
     .fifo_almost_empty(fifo_almost_empty),
+    .clearing_framebuffer(fbuffer_mgr_clearing_framebuffer),
     .fifo_rd_en(stp_to_fifo_rd_en),
     .pixel_addr(stp_to_fb_pixel_addr),
     .pixel_data(stp_to_fb_pixel_data),
     .pixel_wr_en(stp_to_fb_pixel_wr_en)
   );
 
-  framebuffer fbuffer(
+  framebuffer_manager fbuffer_mgr(
+    .clk(clk_100MHz),
+    .resetn(resetn),
+    .frame_pulse(frame_pulse),
+    .pixel_addr(fbuffer_mgr_pixel_addr),
+    .pixel_wr_en(fbuffer_mgr_pixel_wr_en),
+    .pixel_data(fbuffer_mgr_pixel_data),
+    .clearing_framebuffer(fbuffer_mgr_clearing_framebuffer),
+    .buffer_sel(buffer_sel)
+  );
+
+  framebuffer fbuffer0(
     .wrclk(clk_100MHz),
     .rdclk(clk_25_2MHz),
     .resetn(resetn),
-    .wr_en(stp_to_fb_pixel_wr_en),
+    .wr_en(buffer_sel && fbuffer_wr_en),
     .rd_en(controller_to_fb_rd_en),
-    .wr_addr(stp_to_fb_pixel_addr),
+    .wr_addr(fbuffer_wr_addr),
     .rd_addr(controller_to_fb_pixel_addr),
-    .wr_data(stp_to_fb_pixel_data),
-    .rd_data(fb_to_controller_pixel_data)
+    .wr_data(fbuffer_wr_data),
+    .rd_data(fb_to_controller_pixel_data0)
+  );
+
+  framebuffer fbuffer1(
+    .wrclk(clk_100MHz),
+    .rdclk(clk_25_2MHz),
+    .resetn(resetn),
+    .wr_en(!buffer_sel && fbuffer_wr_en),
+    .rd_en(controller_to_fb_rd_en),
+    .wr_addr(fbuffer_wr_addr),
+    .rd_addr(controller_to_fb_pixel_addr),
+    .wr_data(fbuffer_wr_data),
+    .rd_data(fb_to_controller_pixel_data1)
   );
 
   vga_controller controller(
@@ -202,6 +240,11 @@ module top_module(
     .frame_pulse(frame_pulse),
     .line_pulse(line_pulse)
   );
+
+  assign fbuffer_wr_addr = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_addr : stp_to_fb_pixel_addr;
+  assign fbuffer_wr_data = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_data : stp_to_fb_pixel_data;
+  assign fbuffer_wr_en = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_wr_en : stp_to_fb_pixel_wr_en;
+  assign fb_to_controller_pixel_data = buffer_sel ? fb_to_controller_pixel_data1 : fb_to_controller_pixel_data0;
 
   assign line_out_mclk = mclk;
   assign line_out_ws = ws;

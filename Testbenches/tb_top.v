@@ -2,7 +2,7 @@
 module tb_top;
   // Parameters
   localparam SYSCLK_PERIOD = 10;
-  localparam NUM_SAMPLES = 2000;
+  localparam NUM_SAMPLES = 44100;
   localparam DATA_WIDTH = 32;
   localparam SCREEN_WIDTH=640;
   localparam SCREEN_HEIGHT=480;
@@ -81,6 +81,21 @@ module tb_top;
   wire frame_pulse;
   wire line_pulse;
 
+  // Framebuffer Manager
+  wire [ADDR_WIDTH - 1:0] fbuffer_mgr_pixel_addr;
+  wire fbuffer_mgr_pixel_data;
+  wire fbuffer_mgr_pixel_wr_en;
+  wire fbuffer_mgr_clearing_framebuffer;
+  wire buffer_sel;
+
+  wire fb_to_controller_pixel_data0;
+  wire fb_to_controller_pixel_data1;
+
+  wire [ADDR_WIDTH - 1:0] fbuffer_wr_addr;
+  wire fbuffer_wr_data;
+  wire fbuffer_wr_en;
+
+  // File I/O
   integer f;
   integer i;
   integer j;
@@ -177,22 +192,46 @@ module tb_top;
     .frame_pulse(frame_pulse),
     .mono_sample(fifo_to_stp_mono_sample),
     .fifo_almost_empty(fifo_almost_empty),
+    .clearing_framebuffer(fbuffer_mgr_clearing_framebuffer),
     .fifo_rd_en(stp_to_fifo_rd_en),
     .pixel_addr(stp_to_fb_pixel_addr),
     .pixel_data(stp_to_fb_pixel_data),
     .pixel_wr_en(stp_to_fb_pixel_wr_en)
   );
 
-  framebuffer fbuffer(
+  framebuffer_manager fbuffer_mgr(
+    .clk(clk_100MHz),
+    .resetn(resetn),
+    .frame_pulse(frame_pulse),
+    .pixel_addr(fbuffer_mgr_pixel_addr),
+    .pixel_wr_en(fbuffer_mgr_pixel_wr_en),
+    .pixel_data(fbuffer_mgr_pixel_data),
+    .clearing_framebuffer(fbuffer_mgr_clearing_framebuffer),
+    .buffer_sel(buffer_sel)
+  );
+
+  framebuffer fbuffer0(
     .wrclk(clk_100MHz),
     .rdclk(clk_25_2MHz),
     .resetn(resetn),
-    .wr_en(stp_to_fb_pixel_wr_en),
+    .wr_en(buffer_sel && fbuffer_wr_en),
     .rd_en(controller_to_fb_rd_en),
-    .wr_addr(stp_to_fb_pixel_addr),
+    .wr_addr(fbuffer_wr_addr),
     .rd_addr(controller_to_fb_pixel_addr),
-    .wr_data(stp_to_fb_pixel_data),
-    .rd_data(fb_to_controller_pixel_data)
+    .wr_data(fbuffer_wr_data),
+    .rd_data(fb_to_controller_pixel_data0)
+  );
+
+  framebuffer fbuffer1(
+    .wrclk(clk_100MHz),
+    .rdclk(clk_25_2MHz),
+    .resetn(resetn),
+    .wr_en(!buffer_sel && fbuffer_wr_en),
+    .rd_en(controller_to_fb_rd_en),
+    .wr_addr(fbuffer_wr_addr),
+    .rd_addr(controller_to_fb_pixel_addr),
+    .wr_data(fbuffer_wr_data),
+    .rd_data(fb_to_controller_pixel_data1)
   );
 
   vga_controller controller(
@@ -223,7 +262,7 @@ module tb_top;
     wait(ws == 1'b0);
     for (sample_line = 0; sample_line < NUM_SAMPLES; sample_line = sample_line + 1)
     begin
-      sample = sample_memory[sample_line];
+      sample = 32'h00000000;
 
       repeat(DATA_WIDTH) // We want to output the 24 bit sample, then another 8 cycles of don't cares
       begin
@@ -239,14 +278,28 @@ module tb_top;
 
   always @(posedge frame_pulse)
   begin
-    $sformat(filename, "memory_%d.txt", ((sample_line*2)/640));
+    $sformat(filename, "memory0_%d.txt", ((sample_line*2)/640));
     f = $fopen(filename, "w");
 
     for (i = 0; i < SCREEN_HEIGHT; i = i + 1)
     begin
       for (j = 0; j < SCREEN_WIDTH; j = j + 1)
       begin
-        $fwrite(f, "%0b", fbuffer.ram[i * SCREEN_WIDTH + j]);
+        $fwrite(f, "%0b", fbuffer0.ram[i * SCREEN_WIDTH + j]);
+      end
+      $fwrite(f, "\n");
+    end
+
+    $fclose(f);
+    
+    $sformat(filename, "memory1_%d.txt", ((sample_line*2)/640));
+    f = $fopen(filename, "w");
+
+    for (i = 0; i < SCREEN_HEIGHT; i = i + 1)
+    begin
+      for (j = 0; j < SCREEN_WIDTH; j = j + 1)
+      begin
+        $fwrite(f, "%0b", fbuffer1.ram[i * SCREEN_WIDTH + j]);
       end
       $fwrite(f, "\n");
     end
@@ -258,5 +311,10 @@ module tb_top;
   begin
     #(SYSCLK_PERIOD/2) clk_100MHz <= ~clk_100MHz;
   end
+
+  assign fbuffer_wr_addr = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_addr : stp_to_fb_pixel_addr;
+  assign fbuffer_wr_data = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_data : stp_to_fb_pixel_data;
+  assign fbuffer_wr_en = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_wr_en : stp_to_fb_pixel_wr_en;
+  assign fb_to_controller_pixel_data = buffer_sel ? fb_to_controller_pixel_data1 : fb_to_controller_pixel_data0;
 
 endmodule
