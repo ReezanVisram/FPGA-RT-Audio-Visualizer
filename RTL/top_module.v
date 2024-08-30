@@ -2,6 +2,7 @@ module top_module(
     input clk_100MHz,
     input line_in_sdout,
     input reset,
+    input uart_txd_in,
     output line_out_mclk,
     output line_out_ws,
     output line_out_sck,
@@ -14,7 +15,8 @@ module top_module(
     output [3:0] blue,
     output [3:0] green,
     output hsync,
-    output vsync
+    output vsync,
+    output uart_rxd_out
 );
 
   localparam SYSCLK_PERIOD = 10;
@@ -91,6 +93,13 @@ module top_module(
   wire fbuffer_wr_en;
 
   wire fb_to_controller_pixel_data;
+
+  // UART Signals
+  wire uart_data_valid;
+  wire [7:0] uart_data;
+  wire uart_tx_active;
+  wire uart_tx_done;
+
 
   clk_wiz_0 clk_generator(
     .clk_in1(clk_100MHz),
@@ -239,6 +248,24 @@ module top_module(
     .data_enable(data_enable),
     .frame_pulse(frame_pulse),
     .line_pulse(line_pulse)
+  );
+
+  uart_rx uartrx(
+    .clk(clk_25_2MHz),
+    .resetn(resetn),
+    .rx_data(uart_txd_in),
+    .data_valid(uart_data_valid),
+    .data(uart_data)
+  );
+
+  uart_tx uarttx(
+    .clk(clk_25_2MHz),
+    .resetn(resetn),
+    .data_valid(uart_data_valid),
+    .data(uart_data),
+    .tx_active(uart_tx_active),
+    .tx_data(uart_rxd_out),
+    .tx_done(uart_tx_done)
   );
 
   assign fbuffer_wr_addr = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_addr : stp_to_fb_pixel_addr;

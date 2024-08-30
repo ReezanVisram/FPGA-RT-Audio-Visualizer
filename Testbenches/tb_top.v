@@ -95,6 +95,14 @@ module tb_top;
   wire fbuffer_wr_data;
   wire fbuffer_wr_en;
 
+  // UART Signals
+  reg uart_rx_data_in = 1'b1; // Just idle for the purposes of this testbench
+  wire uart_data_valid;
+  wire [7:0] uart_data;
+  wire uart_tx_active;
+  wire uart_tx_data_out;
+  wire uart_tx_done;
+
   // File I/O
   integer f;
   integer i;
@@ -248,6 +256,24 @@ module tb_top;
     .data_enable(data_enable),
     .frame_pulse(frame_pulse),
     .line_pulse(line_pulse)
+  );
+
+  uart_rx uartrx(
+    .clk(clk_25_2MHz),
+    .resetn(resetn),
+    .rx_data(uart_rx_data_in),
+    .data_valid(uart_data_valid),
+    .data(uart_data)
+  );
+
+  uart_tx uarttx(
+    .clk(clk_25_2MHz),
+    .resetn(resetn),
+    .data_valid(uart_data_valid),
+    .data(uart_data),
+    .tx_active(uart_tx_active),
+    .tx_data(uart_tx_data_out),
+    .tx_done(uart_tx_done)
   );
 
   initial
