@@ -79,22 +79,22 @@ module colour_manager(
           begin
             if (uart_data == 8'h72 || uart_data == 8'h52) // r or R
             begin
-              curr_channel <= 3'b00;
+              curr_channel <= 2'b00;
               valid_channel <= 1'b1;
             end 
             else if (uart_data == 8'h67 || uart_data == 8'h47) // g or G
             begin
-              curr_channel <= 3'b01;
+              curr_channel <= 2'b01;
               valid_channel <= 1'b1;
             end
             else if (uart_data == 8'h62 || uart_data == 8'h42) // b or B
             begin
-              curr_channel <= 3'b10;
+              curr_channel <= 2'b10;
               valid_channel <= 1'b1;
             end
             else
             begin
-              curr_channel <= 3'b11;
+              curr_channel <= 2'b11;
               valid_channel <= 1'b0;
             end
           end
@@ -132,15 +132,15 @@ module colour_manager(
             begin
               valid_component <= 1'b1;
               case (curr_channel)
-              3'b000:
+              2'b00:
               begin
                 background_colour[3:0] <= intensity_q;
               end
-              3'b001:
+              2'b01:
               begin
                 background_colour[7:4] <= intensity_q;
               end
-              3'b010:
+              2'b10:
               begin
                 background_colour[11:8] <= intensity_q;
               end
@@ -154,15 +154,15 @@ module colour_manager(
             begin
               valid_component <= 1'b1;
               case (curr_channel)
-                3'b000:
+                2'b00:
                 begin
                   waveform_colour[3:0] <= intensity_q;
                 end
-                3'b001:
+                2'b01:
                 begin
                   waveform_colour[7:4] <= intensity_q;
                 end
-                3'b010:
+                2'b10:
                 begin
                   waveform_colour[11:8] <= intensity_q;
                 end

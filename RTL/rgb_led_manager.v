@@ -1,7 +1,7 @@
 module rgb_led_manager(
   input clk,
   input resetn,
-  input [2:0] curr_channel,
+  input [1:0] curr_channel,
   output reg led_r,
   output reg led_g,
   output reg led_b

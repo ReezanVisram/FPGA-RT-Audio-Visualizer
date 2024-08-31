@@ -107,7 +107,7 @@ module top_module(
   wire uart_tx_done;
 
   // Colour Manager signals
-  wire [2:0] curr_channel;
+  wire [1:0] curr_channel;
   wire [11:0] waveform_colour;
   wire [11:0] background_colour;
 
