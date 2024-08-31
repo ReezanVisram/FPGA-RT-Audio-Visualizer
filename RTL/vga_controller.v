@@ -11,6 +11,9 @@ module vga_controller
   
   input pixel_data,
 
+  input [11:0] waveform_colour,
+  input [11:0] background_colour,
+
   output reg framebuffer_rd_en,
   output reg [$clog2(SCREEN_WIDTH * SCREEN_HEIGHT) - 1:0] pixel_addr,
 
@@ -58,15 +61,15 @@ module vga_controller
     begin
       if (pixel_data)
       begin
-        red = 4'b1111;
-        blue = 4'b0000;
-        green = 4'b1111;
+        red = waveform_colour[3:0];
+        green = waveform_colour[7:4];
+        blue = waveform_colour[11:8];
       end
       else
       begin
-        red = 4'b0000;
-        blue = 4'b0000;
-        green = 4'b0000;
+        red = background_colour[3:0];
+        green = background_colour[7:4];
+        blue = background_colour[11:8];
       end
     end
     else

@@ -16,7 +16,13 @@ module top_module(
     output [3:0] green,
     output hsync,
     output vsync,
-    output uart_rxd_out
+    output uart_rxd_out,
+    output led0_r,
+    output led0_g,
+    output led0_b,
+    output led1_r,
+    output led1_g,
+    output led1_b
 );
 
   localparam SYSCLK_PERIOD = 10;
@@ -100,6 +106,15 @@ module top_module(
   wire uart_tx_active;
   wire uart_tx_done;
 
+  // Colour Manager signals
+  wire [2:0] curr_channel;
+  wire [11:0] waveform_colour;
+  wire [11:0] background_colour;
+
+  // RGB LED Manager Signals
+  wire led_r;
+  wire led_g;
+  wire led_b;
 
   clk_wiz_0 clk_generator(
     .clk_in1(clk_100MHz),
@@ -240,6 +255,8 @@ module top_module(
     .pixel_data(fb_to_controller_pixel_data),
     .framebuffer_rd_en(controller_to_fb_rd_en),
     .pixel_addr(controller_to_fb_pixel_addr),
+    .waveform_colour(waveform_colour),
+    .background_colour(background_colour),
     .red(red),
     .blue(blue),
     .green(green),
@@ -268,6 +285,25 @@ module top_module(
     .tx_done(uart_tx_done)
   );
 
+  colour_manager colour_mgr(
+    .clk(clk_25_2MHz),
+    .resetn(resetn),
+    .uart_data(uart_data),
+    .uart_data_valid(uart_data_valid),
+    .curr_channel(curr_channel),
+    .background_colour(background_colour),
+    .waveform_colour(waveform_colour)
+  );
+
+  rgb_led_manager rgb_led_mgr(
+    .clk(clk_25_2MHz),
+    .resetn(resetn),
+    .curr_channel(curr_channel),
+    .led_r(led_r),
+    .led_g(led_g),
+    .led_b(led_b)
+  );
+
   assign fbuffer_wr_addr = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_addr : stp_to_fb_pixel_addr;
   assign fbuffer_wr_data = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_data : stp_to_fb_pixel_data;
   assign fbuffer_wr_en = fbuffer_mgr_clearing_framebuffer ? fbuffer_mgr_pixel_wr_en : stp_to_fb_pixel_wr_en;
@@ -280,4 +316,11 @@ module top_module(
   assign line_in_ws = ws;
   assign line_in_sck = sck;
   
+  assign led0_r = led_r;
+  assign led0_g = led_g;
+  assign led0_b = led_b;
+  assign led1_r = led_r;
+  assign led1_g = led_g;
+  assign led1_b = led_b;
+
 endmodule
