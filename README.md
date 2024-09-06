@@ -49,6 +49,6 @@ Some of my personal favourite colour schemes are
 ## Future Additions
 
 - Displaying the Fourier Transform of the audio data as well
-- A reverb effect to simulate playing in small, medium and large rooms
-- Using the Digilent PMOD SD and SPI to play audio off of an SD card
-- Adding a MEMS microphone to display speech data as well
+- A reverb effect to simulate playing audio in small, medium, and large rooms
+- Using the Digilent PMOD SD and SPI to play audio files stored on an SD card
+- Adding a MEMS microphone to display incoming sound waves
