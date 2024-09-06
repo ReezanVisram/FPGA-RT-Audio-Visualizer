@@ -45,3 +45,10 @@ Some of my personal favourite colour schemes are
 | (1, 7, 0) | (f, f, 0) | A yellow waveform on a dark-green background |
 
 </div>
+
+## Future Additions
+
+- Displaying the Fourier Transform of the audio data as well
+- A reverb effect to simulate playing in small, medium and large rooms
+- Using the Digilent PMOD SD and SPI to play audio off of an SD card
+- Adding a MEMS microphone to display speech data as well
